@@ -2,7 +2,7 @@ import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import { Server } from 'socket.io';
-
+import { getIceServers } from './turn/ice.js';
 import { config } from './config.js';
 import { log } from './logger.js';
 import { registerHandlers } from './socket/handlers.js';
@@ -23,7 +23,9 @@ app.get('/health', (_req, res) => {
     env: config.env,
   });
 });
-
+app.get('/ice', (_req, res) => {
+  res.json({ iceServers: getIceServers() });
+});
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: config.clientOrigin, credentials: true },

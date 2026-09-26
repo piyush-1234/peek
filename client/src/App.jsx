@@ -1,26 +1,18 @@
-import { useMatch, MatchState } from './hooks/useMatch.js';
+import { useState } from 'react';
+import { useVideoChat, VideoState } from './hooks/useVideoChat.js';
 import Landing from './components/Landing.jsx';
-import StatusPanel from './components/StatusPanel.jsx';
+import VideoRoom from './components/VideoRoom.jsx';
 
 export default function App() {
-  const { state, peerId, initiator, error, findMatch, cancel, leave } = useMatch();
+  const [region, setRegion] = useState('en:in');
+  const chat = useVideoChat();
+  const { state } = chat;
 
-  const showLanding = state === MatchState.IDLE && !peerId;
+  const inRoom = state !== VideoState.IDLE;
 
-  return (
-    <div>
-      {showLanding ? (
-        <Landing onStart={findMatch} />
-      ) : (
-        <StatusPanel
-          state={state}
-          peerId={peerId}
-          initiator={initiator}
-          error={error}
-          onCancel={cancel}
-          onLeave={leave}
-        />
-      )}
-    </div>
+  return inRoom ? (
+    <VideoRoom chat={chat} region={region} />
+  ) : (
+    <Landing onStart={(r) => { setRegion(r); chat.start(r); }} />
   );
 }
