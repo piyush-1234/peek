@@ -3,6 +3,7 @@ import { socket } from '../lib/socket.js';
 
 export const VideoState = Object.freeze({
   IDLE: 'idle',
+  PREVIEW: 'preview',
   REQUESTING_MEDIA: 'requesting_media',
   WAITING: 'waiting',
   NEGOTIATING: 'negotiating',
@@ -13,9 +14,11 @@ export const VideoState = Object.freeze({
 
 const ICE_CONNECT_TIMEOUT_MS = 15000;
 const ICE_RESTART_ATTEMPTS = 2;
+const AUDIO_FADE_MS = 1500;
 
 async function fetchIceServers() {
   try {
+    // const base = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
     const base = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
     const res = await fetch(`${base}/ice`);
     const data = await res.json();
@@ -43,7 +46,8 @@ export function useVideoChat() {
   const iceTimeoutRef = useRef(null);
   const iceRestartCountRef = useRef(0);
   const mountedRef = useRef(true);
-  const generationRef = useRef(0); // bumps on every match — invalidates stale signals
+  const generationRef = useRef(0);
+  const audioFadeRef = useRef(null);
 
   // ---- Video attach ----
   const attachLocal = useCallback((stream) => {
@@ -51,10 +55,26 @@ export function useVideoChat() {
   }, []);
 
   const attachRemote = useCallback((stream) => {
-    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
+    const el = remoteVideoRef.current;
+    if (!el) return;
+    el.srcObject = stream;
+
+    // Audio fade-in: start muted, ramp volume to 1
+    el.volume = 0;
+    if (audioFadeRef.current) clearInterval(audioFadeRef.current);
+    const steps = 30;
+    const stepMs = AUDIO_FADE_MS / steps;
+    let i = 0;
+    audioFadeRef.current = setInterval(() => {
+      i += 1;
+      el.volume = Math.min(1, i / steps);
+      if (i >= steps) {
+        clearInterval(audioFadeRef.current);
+        audioFadeRef.current = null;
+      }
+    }, stepMs);
   }, []);
 
-  // ---- Clear ICE watchdog ----
   const clearIceTimeout = useCallback(() => {
     if (iceTimeoutRef.current) {
       clearTimeout(iceTimeoutRef.current);
@@ -62,17 +82,19 @@ export function useVideoChat() {
     }
   }, []);
 
-  // ---- Teardown peer (keep local stream alive) ----
   const teardownPeer = useCallback(() => {
     clearIceTimeout();
     generationRef.current += 1;
+
+    if (audioFadeRef.current) {
+      clearInterval(audioFadeRef.current);
+      audioFadeRef.current = null;
+    }
 
     const pc = pcRef.current;
     if (pc) {
       try {
         pc.getSenders().forEach((s) => {
-          // Do NOT stop local tracks here — they belong to localStreamRef
-          // Only detach them from this PC
           try { pc.removeTrack(s); } catch {}
         });
         pc.ontrack = null;
@@ -85,7 +107,10 @@ export function useVideoChat() {
       pcRef.current = null;
     }
 
-    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+      remoteVideoRef.current.volume = 1;
+    }
     pendingCandidatesRef.current = [];
     peerIdRef.current = null;
     initiatorRef.current = false;
@@ -97,7 +122,6 @@ export function useVideoChat() {
     }
   }, [clearIceTimeout]);
 
-  // ---- ICE watchdog: fail if never connects ----
   const armIceTimeout = useCallback((pc, generation) => {
     clearIceTimeout();
     iceTimeoutRef.current = setTimeout(() => {
@@ -111,7 +135,6 @@ export function useVideoChat() {
     }, ICE_CONNECT_TIMEOUT_MS);
   }, [clearIceTimeout]);
 
-  // ---- Create peer ----
   const createPeer = useCallback(async (generation) => {
     if (iceServersRef.current.length === 0) {
       iceServersRef.current = await fetchIceServers();
@@ -151,7 +174,6 @@ export function useVideoChat() {
         setState(VideoState.CONNECTED);
         setError(null);
       } else if (s === 'failed') {
-        // Try ICE restart before giving up
         if (iceRestartCountRef.current < ICE_RESTART_ATTEMPTS && initiatorRef.current) {
           iceRestartCountRef.current += 1;
           try {
@@ -166,30 +188,25 @@ export function useVideoChat() {
           setError({ message: 'Connection failed. Try Next.' });
         }
       } else if (s === 'disconnected') {
-        // Transient — let ICE try to recover
         setState(VideoState.NEGOTIATING);
       } else if (s === 'closed') {
         setState(VideoState.IDLE);
       }
     };
 
-    pc.onicecandidateerror = () => {
-      // Swallow STUN errors — non-fatal
-    };
+    pc.onicecandidateerror = () => {};
 
     pcRef.current = pc;
     armIceTimeout(pc, generation);
     return pc;
   }, [attachRemote, clearIceTimeout, armIceTimeout]);
 
-  // ---- Socket listeners — set up ONCE, never re-run ----
+  // ---- Socket listeners ----
   useEffect(() => {
     mountedRef.current = true;
 
     const onMatched = async ({ peerId: newPeerId, initiator: isInit }) => {
       if (!mountedRef.current) return;
-
-      // Tear down any existing peer first (defensive)
       teardownPeer();
 
       const generation = generationRef.current;
@@ -208,11 +225,7 @@ export function useVideoChat() {
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
           if (generation !== generationRef.current) return;
-          socket.emit('signal', {
-            to: newPeerId,
-            type: 'offer',
-            payload: offer,
-          });
+          socket.emit('signal', { to: newPeerId, type: 'offer', payload: offer });
         }
       } catch (err) {
         if (generation !== generationRef.current) return;
@@ -224,13 +237,13 @@ export function useVideoChat() {
     const onSignal = async ({ from, type, payload }) => {
       const pc = pcRef.current;
       if (!pc) return;
-      if (from !== peerIdRef.current) return; // stale signal from old peer
+      if (from !== peerIdRef.current) return;
 
       const generation = generationRef.current;
 
       try {
         if (type === 'offer') {
-          if (initiatorRef.current) return; // we're the initiator, ignore peer offer
+          if (initiatorRef.current) return;
           if (pc.signalingState !== 'stable') return;
           await pc.setRemoteDescription(new RTCSessionDescription(payload));
           if (generation !== generationRef.current) return;
@@ -262,7 +275,6 @@ export function useVideoChat() {
           }
         }
       } catch (err) {
-        // Log but don't fail whole session on one bad signal
         console.warn('signal error', err);
       }
     };
@@ -284,8 +296,8 @@ export function useVideoChat() {
     };
   }, [createPeer, teardownPeer]);
 
-  // ---- Public: start ----
-  const start = useCallback(async (region) => {
+  // ---- Public: begin (request media → PREVIEW state) ----
+  const begin = useCallback(async () => {
     setError(null);
     setState(VideoState.REQUESTING_MEDIA);
     try {
@@ -295,11 +307,11 @@ export function useVideoChat() {
           audio: true,
         });
         localStreamRef.current = stream;
-        attachLocal(stream);
       }
       if (!mountedRef.current) return;
-      setState(VideoState.WAITING);
-      socket.emit('find_match', { region });
+      // Attach after state change so element is mounted
+      requestAnimationFrame(() => attachLocal(localStreamRef.current));
+      setState(VideoState.PREVIEW);
     } catch (err) {
       if (!mountedRef.current) return;
       const name = err?.name || '';
@@ -312,25 +324,25 @@ export function useVideoChat() {
     }
   }, [attachLocal]);
 
+  // ---- Public: confirm ready (enter queue) ----
+  const confirmReady = useCallback((region) => {
+    if (!localStreamRef.current) return begin();
+    setState(VideoState.WAITING);
+    socket.emit('find_match', { region });
+  }, [begin]);
+
   // ---- Public: next ----
   const next = useCallback((region) => {
-    if (!localStreamRef.current) return start(region);
+    if (!localStreamRef.current) return begin();
     teardownPeer();
     setState(VideoState.WAITING);
     setError(null);
     socket.emit('find_match', { region });
-  }, [teardownPeer, start]);
+  }, [teardownPeer, begin]);
 
-  // ---- Public: retry from FAILED state ----
-  const retry = useCallback((region) => {
-    if (!localStreamRef.current) return start(region);
-    teardownPeer();
-    setState(VideoState.WAITING);
-    setError(null);
-    socket.emit('find_match', { region });
-  }, [teardownPeer, start]);
+  const retry = next;
 
-  // ---- Public: leave (full stop) ----
+  // ---- Public: leave ----
   const leave = useCallback(() => {
     socket.emit('leave');
     teardownPeer();
@@ -347,13 +359,10 @@ export function useVideoChat() {
     }
   }, [teardownPeer]);
 
-  // ---- Public: report ----
   const report = useCallback((reason) => {
     socket.emit('report', { reason });
-    // Server will trigger peer_left to us; nothing else to do here
   }, []);
 
-  // ---- Unmount cleanup ----
   useEffect(() => {
     return () => {
       mountedRef.current = false;
@@ -363,12 +372,14 @@ export function useVideoChat() {
           try { t.stop(); } catch {}
         });
       }
+      if (audioFadeRef.current) clearInterval(audioFadeRef.current);
     };
   }, [teardownPeer]);
 
   return {
     state, peerId, initiator, error,
     localVideoRef, remoteVideoRef,
-    start, next, retry, leave, report,
+    localStreamRef,
+    begin, confirmReady, next, retry, leave, report,
   };
 }

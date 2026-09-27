@@ -1,37 +1,55 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { VideoState } from '../hooks/useVideoChat.js';
+import Icebreaker from './Icebreaker.jsx';
 
 export default function VideoRoom({ chat, region }) {
   const {
-    state, peerId, localVideoRef, remoteVideoRef, error,
+    state, error,
+    localVideoRef, remoteVideoRef, localStreamRef,
     next, retry, leave, report,
   } = chat;
+
   const [reportOpen, setReportOpen] = useState(false);
 
-  const showOverlay =
-    state !== VideoState.CONNECTED && state !== VideoState.DISCONNECTED;
+  useEffect(() => {
+    if (localVideoRef.current && localStreamRef.current) {
+      localVideoRef.current.srcObject = localStreamRef.current;
+    }
+  }, [state, localStreamRef, localVideoRef]);
 
   const overlayText = (() => {
     switch (state) {
-      case VideoState.WAITING: return 'Looking for someone...';
-      case VideoState.NEGOTIATING: return 'Connecting...';
-      case VideoState.REQUESTING_MEDIA: return 'Requesting camera...';
-      case VideoState.FAILED: return error?.message || 'Failed';
+      case VideoState.WAITING: return 'Looking for someone…';
+      case VideoState.NEGOTIATING: return 'Connecting…';
+      case VideoState.FAILED: return error?.message || 'Something went wrong';
       default: return '';
     }
   })();
+
+  const showOverlay =
+    state === VideoState.WAITING ||
+    state === VideoState.NEGOTIATING ||
+    state === VideoState.FAILED;
 
   return (
     <div style={styles.wrap}>
       <div style={styles.videos}>
         <video ref={remoteVideoRef} autoPlay playsInline style={styles.remote} />
-        <video ref={localVideoRef} autoPlay playsInline muted style={styles.local} />
+        <div style={styles.localWrap}>
+          <video ref={localVideoRef} autoPlay playsInline muted style={styles.local} />
+          <span style={styles.localLabel}>You</span>
+        </div>
+
+        {state === VideoState.CONNECTED && <Icebreaker visible />}
 
         {showOverlay && (
           <div style={styles.overlay}>
-            <div>{overlayText}</div>
+            {state === VideoState.WAITING && (
+              <div style={styles.spinner} aria-hidden="true" />
+            )}
+            <div style={styles.overlayText}>{overlayText}</div>
             {state === VideoState.FAILED && (
-              <div style={{ marginTop: 12 }}>
+              <div style={{ marginTop: 16 }}>
                 <button style={styles.btn} onClick={() => retry(region)}>Try again</button>
               </div>
             )}
@@ -40,9 +58,9 @@ export default function VideoRoom({ chat, region }) {
 
         {state === VideoState.DISCONNECTED && (
           <div style={styles.overlay}>
-            <div>Stranger disconnected.</div>
-            <div style={{ marginTop: 12, display: 'flex', gap: 12 }}>
-              <button style={styles.btn} onClick={() => next(region)}>Next</button>
+            <div style={styles.overlayText}>They left the chat.</div>
+            <div style={{ marginTop: 16, display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button style={styles.btn} onClick={() => next(region)}>Meet someone new</button>
               <button style={{ ...styles.btn, background: '#c33' }} onClick={leave}>Leave</button>
             </div>
           </div>
@@ -50,12 +68,10 @@ export default function VideoRoom({ chat, region }) {
       </div>
 
       <div style={styles.controls}>
-        <button style={styles.btn} onClick={() => next(region)}>Next</button>
-        <button style={styles.btn} onClick={() => setReportOpen(true)}>Report</button>
+        <button style={styles.btn} onClick={() => next(region)} disabled={state === VideoState.WAITING}>Next</button>
+        <button style={styles.btn} onClick={() => setReportOpen(true)} disabled={state !== VideoState.CONNECTED}>Report</button>
         <button style={{ ...styles.btn, background: '#c33' }} onClick={leave}>Leave</button>
       </div>
-
-      {peerId && <div style={styles.peer}>Peer: {peerId.slice(0, 8)}</div>}
 
       {reportOpen && (
         <ReportDialog
@@ -76,19 +92,15 @@ function ReportDialog({ onCancel, onSubmit }) {
   return (
     <div style={styles.modalBg}>
       <div style={styles.modal}>
-        <h3 style={{ margin: '0 0 12px' }}>Report stranger</h3>
-        <select
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          style={styles.select}
-        >
+        <h3 style={{ margin: '0 0 12px', fontSize: 18 }}>Report this chat</h3>
+        <select value={reason} onChange={(e) => setReason(e.target.value)} style={styles.select}>
           <option value="nudity">Nudity / sexual content</option>
           <option value="harassment">Harassment / abuse</option>
           <option value="minor">Underage user</option>
           <option value="spam">Spam / bot</option>
           <option value="other">Other</option>
         </select>
-        <div style={{ marginTop: 16, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+        <div style={{ marginTop: 20, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
           <button style={styles.btn} onClick={onCancel}>Cancel</button>
           <button style={{ ...styles.btn, background: '#c33' }} onClick={() => onSubmit(reason)}>Report & Leave</button>
         </div>
@@ -98,15 +110,43 @@ function ReportDialog({ onCancel, onSubmit }) {
 }
 
 const styles = {
-  wrap: { fontFamily: 'system-ui', minHeight: '100vh', background: '#111', color: '#fff' },
-  videos: { position: 'relative', maxWidth: 900, margin: '0 auto', aspectRatio: '16/9', background: '#000' },
+  wrap: { fontFamily: 'system-ui', minHeight: '100vh', background: '#0e0e10', color: '#fff', display: 'flex', flexDirection: 'column' },
+  videos: { position: 'relative', flex: 1, maxWidth: 900, width: '100%', margin: '0 auto', background: '#000', overflow: 'hidden' },
   remote: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
-  local: { position: 'absolute', bottom: 16, right: 16, width: 160, height: 120, objectFit: 'cover', border: '2px solid #fff', borderRadius: 8, transform: 'scaleX(-1)' },
-  overlay: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', fontSize: 18, textAlign: 'center', padding: 20 },
-  controls: { display: 'flex', justifyContent: 'center', gap: 16, padding: 20 },
-  btn: { padding: '12px 24px', fontSize: 16, background: '#333', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' },
-  peer: { textAlign: 'center', fontSize: 12, color: '#666', paddingBottom: 16 },
-  modalBg: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 },
-  modal: { background: '#222', padding: 24, borderRadius: 12, minWidth: 320 },
-  select: { width: '100%', padding: 10, fontSize: 14, background: '#111', color: '#fff', border: '1px solid #444', borderRadius: 6 },
+  localWrap: {
+  position: 'absolute',
+  bottom: 20,
+  right: 20,
+  width: 140,
+  height: 105,
+  borderRadius: 12,
+  overflow: 'hidden',
+  border: '2px solid rgba(255,255,255,0.25)',
+  boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+  background: '#111',
+},
+local: {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  transform: 'scaleX(-1)',
+  display: 'block',
+},
+localLabel: {
+  position: 'absolute',
+  bottom: 4,
+  left: 8,
+  fontSize: 11,
+  color: '#fff',
+  textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+  fontWeight: 500,
+},
+  overlay: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.85)', padding: 20, textAlign: 'center' },
+  overlayText: { fontSize: 16, color: '#ccc' },
+  spinner: { width: 40, height: 40, border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: 20 },
+  controls: { display: 'flex', justifyContent: 'center', gap: 12, padding: 20, flexWrap: 'wrap' },
+  btn: { padding: '12px 24px', fontSize: 15, background: '#222', color: '#fff', border: 'none', borderRadius: 999, cursor: 'pointer', fontWeight: 500 },
+  modalBg: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 20 },
+  modal: { background: '#1a1a1c', padding: 24, borderRadius: 16, minWidth: 300, maxWidth: 400, width: '100%' },
+  select: { width: '100%', padding: 12, fontSize: 14, background: '#0e0e10', color: '#fff', border: '1px solid #333', borderRadius: 8 },
 };

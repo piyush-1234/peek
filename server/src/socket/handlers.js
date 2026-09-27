@@ -1,3 +1,5 @@
+
+import { writeReport } from '../reports/store.js';
 import { config } from '../config.js';
 import { log } from '../logger.js';
 import {
@@ -10,7 +12,7 @@ import {
 import { enqueue, dequeue } from '../matching/queue.js';
 import { relaySignal } from './relay.js';
 
-const ALLOWED_REGIONS = new Set(['en:in', 'hi:in', 'en:us', 'en:uk', 'es:mx']);
+const ALLOWED_REGIONS = new Set(['anywhere', 'en:in', 'hi:in', 'en:us', 'en:uk', 'es:mx']);
 const timeoutTimers = new Map(); // socketId -> timeout handle
 
 export function registerHandlers(io, socket) {
@@ -76,10 +78,27 @@ export function registerHandlers(io, socket) {
     cleanup(io, socket, 'user_leave');
   });
 
-  socket.on('report', ({ reason } = {}) => {
+    socket.on('report', ({ reason } = {}) => {
     const s = getSession(socket.id);
-    log.warn(`REPORT from ${socket.id} peer=${s?.peerId} reason=${reason || 'none'}`);
-    // Phase 1: log only. Phase 4 will persist + rate-limit.
+    const peerSocketId = s?.peerId;
+    const peerSocket = peerSocketId ? io.sockets.sockets.get(peerSocketId) : null;
+
+    writeReport({
+      reporterSocket: socket.id,
+      peerSocket: peerSocketId || null,
+      reporterIp: socket.handshake.address,
+      peerIp: peerSocket?.handshake?.address || null,
+      reporterUA: socket.handshake.headers['user-agent'] || null,
+      peerUA: peerSocket?.handshake?.headers?.['user-agent'] || null,
+      reason: reason || 'unspecified',
+    });
+
+    log.warn(`REPORT ${socket.id} -> ${peerSocketId} reason=${reason || 'none'}`);
+
+    if (peerSocketId) {
+      io.to(peerSocketId).emit('reported_by_peer', {});
+    }
+
     cleanup(io, socket, 'reported');
   });
 
