@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { socket } from '../lib/socket.js';
-// `${import.meta.env.VITE_SERVER_URL || 'http://172.28.202.191:4000'}/ice`
-`${import.meta.env.VITE_SERVER_URL || 'http://localhost:4000'}/ice`
 
 export const VideoState = Object.freeze({
   IDLE: 'idle',
@@ -9,15 +7,17 @@ export const VideoState = Object.freeze({
   WAITING: 'waiting',
   NEGOTIATING: 'negotiating',
   CONNECTED: 'connected',
+  DISCONNECTED: 'disconnected',
   FAILED: 'failed',
-  CLOSED: 'closed',
 });
+
+const ICE_CONNECT_TIMEOUT_MS = 15000;
+const ICE_RESTART_ATTEMPTS = 2;
 
 async function fetchIceServers() {
   try {
-    const res = await fetch(
-      `${import.meta.env.VITE_SERVER_URL || 'http://localhost:4000'}/ice`
-    );
+    const base = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
+    const res = await fetch(`${base}/ice`);
     const data = await res.json();
     return data.iceServers || [];
   } catch {
@@ -40,67 +40,99 @@ export function useVideoChat() {
   const initiatorRef = useRef(false);
   const iceServersRef = useRef([]);
   const pendingCandidatesRef = useRef([]);
+  const iceTimeoutRef = useRef(null);
+  const iceRestartCountRef = useRef(0);
+  const mountedRef = useRef(true);
+  const generationRef = useRef(0); // bumps on every match — invalidates stale signals
 
-  // ---- Attach local stream to <video> ----
+  // ---- Video attach ----
   const attachLocal = useCallback((stream) => {
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = stream;
-    }
+    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
   }, []);
 
   const attachRemote = useCallback((stream) => {
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = stream;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
+  }, []);
+
+  // ---- Clear ICE watchdog ----
+  const clearIceTimeout = useCallback(() => {
+    if (iceTimeoutRef.current) {
+      clearTimeout(iceTimeoutRef.current);
+      iceTimeoutRef.current = null;
     }
   }, []);
 
-  // ---- Cleanup peer connection (but keep local stream) ----
+  // ---- Teardown peer (keep local stream alive) ----
   const teardownPeer = useCallback(() => {
-    if (pcRef.current) {
+    clearIceTimeout();
+    generationRef.current += 1;
+
+    const pc = pcRef.current;
+    if (pc) {
       try {
-        pcRef.current.getSenders().forEach((s) => {
-          try { s.track && s.track.stop && s.track.stop(); } catch {}
+        pc.getSenders().forEach((s) => {
+          // Do NOT stop local tracks here — they belong to localStreamRef
+          // Only detach them from this PC
+          try { pc.removeTrack(s); } catch {}
         });
-        pcRef.current.ontrack = null;
-        pcRef.current.onicecandidate = null;
-        pcRef.current.onconnectionstatechange = null;
-        pcRef.current.close();
+        pc.ontrack = null;
+        pc.onicecandidate = null;
+        pc.onconnectionstatechange = null;
+        pc.oniceconnectionstatechange = null;
+        pc.onicecandidateerror = null;
+        pc.close();
       } catch {}
       pcRef.current = null;
     }
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = null;
-    }
+
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     pendingCandidatesRef.current = [];
     peerIdRef.current = null;
     initiatorRef.current = false;
-    setPeerId(null);
-    setInitiator(false);
-  }, []);
+    iceRestartCountRef.current = 0;
 
-  // ---- Create peer connection ----
-  const createPeer = useCallback(async () => {
+    if (mountedRef.current) {
+      setPeerId(null);
+      setInitiator(false);
+    }
+  }, [clearIceTimeout]);
+
+  // ---- ICE watchdog: fail if never connects ----
+  const armIceTimeout = useCallback((pc, generation) => {
+    clearIceTimeout();
+    iceTimeoutRef.current = setTimeout(() => {
+      if (generation !== generationRef.current) return;
+      if (!mountedRef.current) return;
+      const cs = pc.connectionState;
+      if (cs !== 'connected' && cs !== 'completed') {
+        setState(VideoState.FAILED);
+        setError({ message: 'Could not connect. Try Next.' });
+      }
+    }, ICE_CONNECT_TIMEOUT_MS);
+  }, [clearIceTimeout]);
+
+  // ---- Create peer ----
+  const createPeer = useCallback(async (generation) => {
     if (iceServersRef.current.length === 0) {
       iceServersRef.current = await fetchIceServers();
     }
 
     const pc = new RTCPeerConnection({ iceServers: iceServersRef.current });
 
-    // Add local tracks
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => {
         pc.addTrack(track, localStreamRef.current);
       });
     }
 
-    // Remote track arrives
     pc.ontrack = (event) => {
+      if (generation !== generationRef.current) return;
       const [stream] = event.streams;
       if (stream) attachRemote(stream);
     };
 
-    // ICE candidate to send to peer
     pc.onicecandidate = (event) => {
+      if (generation !== generationRef.current) return;
       if (event.candidate && peerIdRef.current) {
         socket.emit('signal', {
           to: peerIdRef.current,
@@ -110,47 +142,80 @@ export function useVideoChat() {
       }
     };
 
-    // Connection state changes
     pc.onconnectionstatechange = () => {
+      if (generation !== generationRef.current) return;
+      if (!mountedRef.current) return;
       const s = pc.connectionState;
       if (s === 'connected') {
+        clearIceTimeout();
         setState(VideoState.CONNECTED);
+        setError(null);
       } else if (s === 'failed') {
-        setState(VideoState.FAILED);
-        setError({ message: 'Connection failed' });
+        // Try ICE restart before giving up
+        if (iceRestartCountRef.current < ICE_RESTART_ATTEMPTS && initiatorRef.current) {
+          iceRestartCountRef.current += 1;
+          try {
+            pc.restartIce();
+            setState(VideoState.NEGOTIATING);
+          } catch {
+            setState(VideoState.FAILED);
+            setError({ message: 'Connection failed' });
+          }
+        } else {
+          setState(VideoState.FAILED);
+          setError({ message: 'Connection failed. Try Next.' });
+        }
       } else if (s === 'disconnected') {
-        // transient — give ICE restart a chance
+        // Transient — let ICE try to recover
+        setState(VideoState.NEGOTIATING);
       } else if (s === 'closed') {
-        setState(VideoState.CLOSED);
+        setState(VideoState.IDLE);
       }
     };
 
-    pcRef.current = pc;
-    return pc;
-  }, [attachRemote]);
+    pc.onicecandidateerror = () => {
+      // Swallow STUN errors — non-fatal
+    };
 
-  // ---- Handle incoming signals ----
+    pcRef.current = pc;
+    armIceTimeout(pc, generation);
+    return pc;
+  }, [attachRemote, clearIceTimeout, armIceTimeout]);
+
+  // ---- Socket listeners — set up ONCE, never re-run ----
   useEffect(() => {
-    const onMatched = async ({ peerId, initiator }) => {
-      peerIdRef.current = peerId;
-      initiatorRef.current = initiator;
-      setPeerId(peerId);
-      setInitiator(initiator);
+    mountedRef.current = true;
+
+    const onMatched = async ({ peerId: newPeerId, initiator: isInit }) => {
+      if (!mountedRef.current) return;
+
+      // Tear down any existing peer first (defensive)
+      teardownPeer();
+
+      const generation = generationRef.current;
+      peerIdRef.current = newPeerId;
+      initiatorRef.current = isInit;
+      setPeerId(newPeerId);
+      setInitiator(isInit);
       setState(VideoState.NEGOTIATING);
+      setError(null);
 
       try {
-        const pc = await createPeer();
+        const pc = await createPeer(generation);
+        if (generation !== generationRef.current) return;
 
-        if (initiator) {
+        if (isInit) {
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
+          if (generation !== generationRef.current) return;
           socket.emit('signal', {
-            to: peerId,
+            to: newPeerId,
             type: 'offer',
             payload: offer,
           });
         }
       } catch (err) {
+        if (generation !== generationRef.current) return;
         setError({ message: err.message });
         setState(VideoState.FAILED);
       }
@@ -159,11 +224,17 @@ export function useVideoChat() {
     const onSignal = async ({ from, type, payload }) => {
       const pc = pcRef.current;
       if (!pc) return;
+      if (from !== peerIdRef.current) return; // stale signal from old peer
+
+      const generation = generationRef.current;
 
       try {
         if (type === 'offer') {
+          if (initiatorRef.current) return; // we're the initiator, ignore peer offer
+          if (pc.signalingState !== 'stable') return;
           await pc.setRemoteDescription(new RTCSessionDescription(payload));
-          // flush pending ICE
+          if (generation !== generationRef.current) return;
+
           for (const c of pendingCandidatesRef.current) {
             try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
           }
@@ -171,9 +242,14 @@ export function useVideoChat() {
 
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
+          if (generation !== generationRef.current) return;
           socket.emit('signal', { to: from, type: 'answer', payload: answer });
         } else if (type === 'answer') {
+          if (!initiatorRef.current) return;
+          if (pc.signalingState !== 'have-local-offer') return;
           await pc.setRemoteDescription(new RTCSessionDescription(payload));
+          if (generation !== generationRef.current) return;
+
           for (const c of pendingCandidatesRef.current) {
             try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
           }
@@ -186,13 +262,15 @@ export function useVideoChat() {
           }
         }
       } catch (err) {
-        setError({ message: err.message });
+        // Log but don't fail whole session on one bad signal
+        console.warn('signal error', err);
       }
     };
 
     const onPeerLeft = () => {
+      if (!mountedRef.current) return;
       teardownPeer();
-      setState(VideoState.IDLE);
+      setState(VideoState.DISCONNECTED);
     };
 
     socket.on('matched', onMatched);
@@ -206,51 +284,84 @@ export function useVideoChat() {
     };
   }, [createPeer, teardownPeer]);
 
-  // ---- Public: start chat ----
+  // ---- Public: start ----
   const start = useCallback(async (region) => {
     setError(null);
     setState(VideoState.REQUESTING_MEDIA);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: true,
-      });
-      localStreamRef.current = stream;
-      attachLocal(stream);
+      if (!localStreamRef.current) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: true,
+        });
+        localStreamRef.current = stream;
+        attachLocal(stream);
+      }
+      if (!mountedRef.current) return;
       setState(VideoState.WAITING);
       socket.emit('find_match', { region });
     } catch (err) {
-      setError({ message: 'Camera/mic access denied or unavailable' });
+      if (!mountedRef.current) return;
+      const name = err?.name || '';
+      let msg = 'Could not access camera/mic.';
+      if (name === 'NotAllowedError') msg = 'Permission denied. Enable camera and mic to continue.';
+      else if (name === 'NotFoundError') msg = 'No camera or microphone found.';
+      else if (name === 'NotReadableError') msg = 'Camera is in use by another app.';
+      setError({ message: msg });
       setState(VideoState.FAILED);
     }
   }, [attachLocal]);
 
-  // ---- Public: next (tear down peer, requeue) ----
+  // ---- Public: next ----
   const next = useCallback((region) => {
+    if (!localStreamRef.current) return start(region);
     teardownPeer();
     setState(VideoState.WAITING);
+    setError(null);
     socket.emit('find_match', { region });
-  }, [teardownPeer]);
+  }, [teardownPeer, start]);
 
-  // ---- Public: leave (tear down everything) ----
+  // ---- Public: retry from FAILED state ----
+  const retry = useCallback((region) => {
+    if (!localStreamRef.current) return start(region);
+    teardownPeer();
+    setState(VideoState.WAITING);
+    setError(null);
+    socket.emit('find_match', { region });
+  }, [teardownPeer, start]);
+
+  // ---- Public: leave (full stop) ----
   const leave = useCallback(() => {
     socket.emit('leave');
     teardownPeer();
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((t) => t.stop());
+      localStreamRef.current.getTracks().forEach((t) => {
+        try { t.stop(); } catch {}
+      });
       localStreamRef.current = null;
     }
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
-    setState(VideoState.IDLE);
-    setError(null);
+    if (mountedRef.current) {
+      setState(VideoState.IDLE);
+      setError(null);
+    }
   }, [teardownPeer]);
 
-  // ---- Cleanup on unmount ----
+  // ---- Public: report ----
+  const report = useCallback((reason) => {
+    socket.emit('report', { reason });
+    // Server will trigger peer_left to us; nothing else to do here
+  }, []);
+
+  // ---- Unmount cleanup ----
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
       teardownPeer();
       if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((t) => t.stop());
+        localStreamRef.current.getTracks().forEach((t) => {
+          try { t.stop(); } catch {}
+        });
       }
     };
   }, [teardownPeer]);
@@ -258,6 +369,6 @@ export function useVideoChat() {
   return {
     state, peerId, initiator, error,
     localVideoRef, remoteVideoRef,
-    start, next, leave,
+    start, next, retry, leave, report,
   };
 }

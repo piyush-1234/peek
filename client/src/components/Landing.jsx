@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { MatchState } from '../hooks/useMatch.js';
 
 const REGIONS = [
   { id: 'en:in', label: 'English · India' },

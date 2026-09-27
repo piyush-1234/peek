@@ -8,7 +8,8 @@ export default function App() {
   const chat = useVideoChat();
   const { state } = chat;
 
-  const inRoom = state !== VideoState.IDLE;
+  const inRoom =
+    state !== VideoState.IDLE;
 
   return inRoom ? (
     <VideoRoom chat={chat} region={region} />
