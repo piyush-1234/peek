@@ -285,17 +285,35 @@ export function useVideoChat() {
       setState(VideoState.DISCONNECTED);
     };
 
+    const onError = (err) => {
+      if (!mountedRef.current) return;
+      setError({ message: err?.message || 'Something went wrong' });
+      setState(VideoState.FAILED);
+    };
+
     socket.on('matched', onMatched);
     socket.on('signal', onSignal);
     socket.on('peer_left', onPeerLeft);
+    socket.on('error', onError);
 
     return () => {
       socket.off('matched', onMatched);
       socket.off('signal', onSignal);
       socket.off('peer_left', onPeerLeft);
+      socket.off('error', onError);
     };
   }, [createPeer, teardownPeer]);
-
+  // ---- Moderation heartbeat (every 10s while connected) ----
+  useEffect(() => {
+    if (state !== VideoState.CONNECTED) return;
+    const interval = setInterval(() => {
+      socket.emit('moderation_sample', {
+        peerId: peerIdRef.current,
+        sample: null, // real version would send a base64-encoded frame
+      });
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [state]);
   // ---- Public: begin (request media → PREVIEW state) ----
   const begin = useCallback(async () => {
     setError(null);
