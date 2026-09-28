@@ -1,4 +1,5 @@
-
+import { writeFlag, scanFrame } from '../moderation/store.js';
+import { checkMatchLimit, checkConnectionLimit } from '../rateLimit.js';
 import { writeReport } from '../reports/store.js';
 import { config } from '../config.js';
 import { log } from '../logger.js';
@@ -13,22 +14,40 @@ import { enqueue, dequeue } from '../matching/queue.js';
 import { relaySignal } from './relay.js';
 
 const ALLOWED_REGIONS = new Set(['anywhere', 'en:in', 'hi:in', 'en:us', 'en:uk', 'es:mx']);
-const timeoutTimers = new Map(); // socketId -> timeout handle
+const timeoutTimers = new Map();
 
 export function registerHandlers(io, socket) {
-  log.info(`Connected: ${socket.id}`);
+  const ip = socket.handshake.address;
+  const connLimit = checkConnectionLimit(ip);
+  if (!connLimit.ok) {
+    log.warn('Connection rate limit hit', { ip });
+    socket.emit('error', { code: 'RATE_LIMITED', message: 'Too many connections.' });
+    socket.disconnect(true);
+    return;
+  }
+
+  log.info('Connected', { socketId: socket.id, ip });
   createSession(socket.id);
 
   socket.on('find_match', ({ region } = {}) => {
     const session = getSession(socket.id);
     if (!session) return;
+
+    const matchLimit = checkMatchLimit(ip);
+    if (!matchLimit.ok) {
+      socket.emit('error', {
+        code: 'RATE_LIMITED',
+        message: `Too many matches. Try again in ${matchLimit.retryAfter}s.`,
+      });
+      return;
+    }
+
     if (session.state !== SessionState.IDLE && session.state !== SessionState.MATCHED) return;
     if (!region || !ALLOWED_REGIONS.has(region)) {
       socket.emit('error', { code: 'BAD_REGION', message: 'Invalid region' });
       return;
     }
 
-    // If matched, tear down peer relationship first
     if (session.peerId) {
       io.to(session.peerId).emit('peer_left', {});
       updateSession(session.peerId, { state: SessionState.CLOSED, peerId: null });
@@ -44,7 +63,6 @@ export function registerHandlers(io, socket) {
     enqueue(region, socket.id);
     socket.emit('waiting', { region });
 
-    // Match timeout
     clearTimeout(timeoutTimers.get(socket.id));
     const t = setTimeout(() => {
       const s = getSession(socket.id);
@@ -74,11 +92,27 @@ export function registerHandlers(io, socket) {
     relaySignal(io, socket, msg);
   });
 
+    socket.on('moderation_sample', async ({ peerId, sample } = {}) => {
+    // sample is optional — client may send a base64 frame; we don't store it
+    // Real version: pass `sample` to scanFrame()
+    const result = await scanFrame();
+    if (result.flagged) {
+      writeFlag({
+        sessionSocket: socket.id,
+        peerSocket: peerId || null,
+        reason: result.reason,
+        confidence: result.confidence,
+        source: 'auto',
+      });
+      log.warn('Moderation flag', { socketId: socket.id, peer: peerId, reason: result.reason });
+    }
+  });
+  
   socket.on('leave', () => {
     cleanup(io, socket, 'user_leave');
   });
 
-    socket.on('report', ({ reason } = {}) => {
+  socket.on('report', ({ reason } = {}) => {
     const s = getSession(socket.id);
     const peerSocketId = s?.peerId;
     const peerSocket = peerSocketId ? io.sockets.sockets.get(peerSocketId) : null;
@@ -93,7 +127,7 @@ export function registerHandlers(io, socket) {
       reason: reason || 'unspecified',
     });
 
-    log.warn(`REPORT ${socket.id} -> ${peerSocketId} reason=${reason || 'none'}`);
+    log.warn('Report', { reporter: socket.id, peer: peerSocketId, reason: reason || 'unspecified' });
 
     if (peerSocketId) {
       io.to(peerSocketId).emit('reported_by_peer', {});
@@ -103,7 +137,7 @@ export function registerHandlers(io, socket) {
   });
 
   socket.on('disconnect', () => {
-    log.info(`Disconnected: ${socket.id}`);
+    log.info('Disconnected', { socketId: socket.id });
     cleanup(io, socket, 'disconnect');
     deleteSession(socket.id);
   });
@@ -113,7 +147,6 @@ function cleanup(io, socket, reason) {
   const s = getSession(socket.id);
   if (!s) return;
 
-  // Notify peer
   if (s.peerId) {
     io.to(s.peerId).emit('peer_left', { reason });
     updateSession(s.peerId, {
@@ -124,7 +157,6 @@ function cleanup(io, socket, reason) {
     });
   }
 
-  // Remove from queue
   dequeue(socket.id);
   clearTimeout(timeoutTimers.get(socket.id));
   timeoutTimers.delete(socket.id);
