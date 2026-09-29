@@ -1,3 +1,4 @@
+import { recordUnique } from '../stats.js';
 import { writeFlag, scanFrame } from '../moderation/store.js';
 import { checkMatchLimit, checkConnectionLimit } from '../rateLimit.js';
 import { writeReport } from '../reports/store.js';
@@ -18,6 +19,7 @@ const timeoutTimers = new Map();
 
 export function registerHandlers(io, socket) {
   const ip = (socket.handshake.headers['x-forwarded-for'] || '').split(',')[0].trim() || socket.handshake.address;
+  recordUnique(ip);
   const connLimit = checkConnectionLimit(ip);
   if (!connLimit.ok) {
     log.warn('Connection rate limit hit', { ip });
@@ -29,9 +31,11 @@ export function registerHandlers(io, socket) {
   log.info('Connected', { socketId: socket.id, ip });
   createSession(socket.id);
 
-  socket.on('find_match', ({ region } = {}) => {
+    socket.on('find_match', ({ region } = {}) => {
     const session = getSession(socket.id);
     if (!session) return;
+
+    log.info('find_match', { socketId: socket.id, region, ip });
 
     const matchLimit = checkMatchLimit(ip);
     if (!matchLimit.ok) {

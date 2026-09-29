@@ -33,6 +33,7 @@ export function useVideoChat() {
   const [peerId, setPeerId] = useState(null);
   const [initiator, setInitiator] = useState(false);
   const [error, setError] = useState(null);
+  const [online, setOnline] = useState({ total: 0, waiting: 0, uniqueTotal: 0 });
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -291,16 +292,23 @@ export function useVideoChat() {
       setState(VideoState.FAILED);
     };
 
+        const onOnlineCount = (data) => {
+      if (!mountedRef.current) return;
+      setOnline(data);
+    };
+
     socket.on('matched', onMatched);
     socket.on('signal', onSignal);
     socket.on('peer_left', onPeerLeft);
     socket.on('error', onError);
+    socket.on('online_count', onOnlineCount);
 
     return () => {
       socket.off('matched', onMatched);
       socket.off('signal', onSignal);
       socket.off('peer_left', onPeerLeft);
       socket.off('error', onError);
+      socket.off('online_count', onOnlineCount);
     };
   }, [createPeer, teardownPeer]);
   // ---- Moderation heartbeat (every 10s while connected) ----
@@ -394,8 +402,9 @@ export function useVideoChat() {
     };
   }, [teardownPeer]);
 
-  return {
+    return {
     state, peerId, initiator, error,
+    online,
     localVideoRef, remoteVideoRef,
     localStreamRef,
     begin, confirmReady, next, retry, leave, report,

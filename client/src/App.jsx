@@ -10,7 +10,7 @@ export default function App() {
   const { state, localVideoRef } = chat;
 
   if (state === VideoState.IDLE) {
-    return <Landing onStart={(r) => { setRegion(r); chat.begin(); }} />;
+    return <Landing onStart={(r) => { setRegion(r); chat.begin(); }} online={chat.online} />;
   }
 
   if (state === VideoState.REQUESTING_MEDIA) {
