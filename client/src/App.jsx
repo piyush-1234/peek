@@ -7,15 +7,15 @@ import VideoRoom from './components/VideoRoom.jsx';
 export default function App() {
   const [region, setRegion] = useState('anywhere');
   const chat = useVideoChat();
-  const { state, localVideoRef } = chat;
+  const { state, localVideoRef, online } = chat;
 
   if (state === VideoState.IDLE) {
-    return <Landing onStart={(r) => { setRegion(r); chat.begin(); }} online={chat.online} />;
+    return <Landing onStart={(r) => { setRegion(r); chat.begin(); }} online={online} />;
   }
 
   if (state === VideoState.REQUESTING_MEDIA) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0e0e10', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui' }}>
+      <div style={{ minHeight: '100vh', background: '#fdfaff', color: '#2d1b4e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Poppins', system-ui", fontSize: 16 }}>
         Requesting camera…
       </div>
     );
@@ -27,6 +27,7 @@ export default function App() {
         localVideoRef={localVideoRef}
         onReady={() => chat.confirmReady(region)}
         onLeave={chat.leave}
+        online={online}
       />
     );
   }

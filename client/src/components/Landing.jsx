@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
+import Nav from './Nav.jsx';
 
 const REGIONS = [
-  { id: 'anywhere', label: '🌍 Anywhere' },
-  { id: 'en:in', label: '🇮🇳 India (English)' },
-  { id: 'hi:in', label: '🇮🇳 India (Hindi)' },
-  { id: 'en:us', label: '🇺🇸 United States' },
-  { id: 'en:uk', label: '🇬🇧 United Kingdom' },
-  { id: 'es:mx', label: '🇲🇽 Mexico' },
+  { id: 'anywhere', label: '🌍 Anywhere', sub: 'Match with anyone, worldwide' },
+  { id: 'en:in', label: '🇮🇳 India (English)', sub: 'English speakers in India' },
+  { id: 'hi:in', label: '🇮🇳 India (Hindi)', sub: 'Hindi speakers in India' },
+  { id: 'en:us', label: '🇺🇸 United States', sub: 'Match with users in the US' },
+  { id: 'en:uk', label: '🇬🇧 United Kingdom', sub: 'Match with users in the UK' },
+  { id: 'es:mx', label: '🇲🇽 Mexico', sub: 'Spanish speakers in Mexico' },
 ];
 
 const FEATURES = [
@@ -37,26 +38,17 @@ export default function Landing({ onStart, online }) {
     onStart(region);
   };
 
+  const selectedRegion = REGIONS.find((r) => r.id === region);
+
   return (
     <div className="landing">
-      {/* decorative blobs */}
       <div className="blob blob-a" />
       <div className="blob blob-b" />
       <div className="blob blob-c" />
       <div className="blob blob-d" />
 
-      {/* NAV */}
-      <nav className="nav">
-        <img src="/peek-logo.png" alt="Peek" className="nav-logo" />
-        <div className="nav-links">
-          <a className="nav-link active">Home</a>
-          <a className="nav-link">Features</a>
-          <a className="nav-link">Community</a>
-        </div>
-        <button className="nav-cta" onClick={handleStart}>Join Now →</button>
-      </nav>
+      <Nav online={online} onLogoClick={() => {}} showStats />
 
-      {/* HERO */}
       <main className="hero">
         <div className="hero-left">
           <p className="hero-eyebrow">Real People. Random Chats. Endless Fun.</p>
@@ -75,54 +67,50 @@ export default function Landing({ onStart, online }) {
             <span className="pill pill-orange">🍕 Order Food & Treat</span>
           </div>
 
-          <div className="stats">
-            <div className="online-pill">
-              <span className="dot-live" />
-              {online?.total > 0 ? `${online.total} online now` : 'Be the first one here'}
-            </div>
-            {online?.uniqueTotal > 0 && (
-              <div className="unique-pill">
-                ✨ {online.uniqueTotal.toLocaleString()} {online.uniqueTotal === 1 ? 'person has' : 'people have'} joined
+          <div className="cta-block">
+            <button
+              className="region-selector"
+              onClick={() => setShowRegions((v) => !v)}
+              aria-expanded={showRegions}
+            >
+              <span className="region-selector-value">{selectedRegion?.label}</span>
+              <span className={`region-chevron ${showRegions ? 'open' : ''}`}>▾</span>
+            </button>
+
+            {showRegions && (
+              <div className="region-list">
+                {REGIONS.map((r) => (
+                  <button
+                    key={r.id}
+                    className={`region-item ${r.id === region ? 'active' : ''}`}
+                    onClick={() => { setRegion(r.id); setShowRegions(false); }}
+                  >
+                    <span className="region-item-label">{r.label}</span>
+                    <span className="region-item-sub">{r.sub}</span>
+                  </button>
+                ))}
               </div>
             )}
+
+            <label className="age-check">
+              <input
+                type="checkbox"
+                checked={ageConfirmed}
+                onChange={(e) => handleAge(e.target.checked)}
+              />
+              <span>I am 18 or older</span>
+            </label>
+
+            <button
+              className="cta"
+              disabled={!ageConfirmed}
+              onClick={handleStart}
+            >
+              Start Chatting Now →
+            </button>
+
+            <p className="footnote">Every chat is moderated. Leave anytime with one tap.</p>
           </div>
-
-          <label className="age-check">
-            <input
-              type="checkbox"
-              checked={ageConfirmed}
-              onChange={(e) => handleAge(e.target.checked)}
-            />
-            <span>I am 18 or older</span>
-          </label>
-
-          <button
-            className="cta"
-            disabled={!ageConfirmed}
-            onClick={handleStart}
-          >
-            Start Chatting Now →
-          </button>
-
-          <button className="region-toggle" onClick={() => setShowRegions((v) => !v)}>
-            {REGIONS.find((r) => r.id === region)?.label} · change
-          </button>
-
-          {showRegions && (
-            <div className="region-list">
-              {REGIONS.map((r) => (
-                <button
-                  key={r.id}
-                  className={`region-item ${r.id === region ? 'active' : ''}`}
-                  onClick={() => { setRegion(r.id); setShowRegions(false); }}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <p className="footnote">Every chat is moderated. Leave anytime with one tap.</p>
         </div>
 
         <div className="hero-right">
@@ -130,9 +118,7 @@ export default function Landing({ onStart, online }) {
             <div className="mockup-frame">
               <div className="mockup-badge-live">● LIVE</div>
               <div className="mockup-badge-viewers">👁 2.4K</div>
-              <div className="mockup-face">
-                <span>😄</span>
-              </div>
+              <div className="mockup-face"><span>😄</span></div>
               <div className="mockup-grid">
                 <div className="mockup-tile">👦</div>
                 <div className="mockup-tile">👧</div>
@@ -156,7 +142,6 @@ export default function Landing({ onStart, online }) {
 
       <div className="ribbon">Chat + Play + Reward + Food = Peek</div>
 
-      {/* FEATURES */}
       <section className="features">
         <div className="features-head">
           <p className="features-eyebrow">Why Peek?</p>
