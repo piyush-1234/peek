@@ -17,7 +17,7 @@ const ALLOWED_REGIONS = new Set(['anywhere', 'en:in', 'hi:in', 'en:us', 'en:uk',
 const timeoutTimers = new Map();
 
 export function registerHandlers(io, socket) {
-  const ip = socket.handshake.address;
+  const ip = (socket.handshake.headers['x-forwarded-for'] || '').split(',')[0].trim() || socket.handshake.address;
   const connLimit = checkConnectionLimit(ip);
   if (!connLimit.ok) {
     log.warn('Connection rate limit hit', { ip });
