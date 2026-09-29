@@ -1,3 +1,4 @@
+import { getTotalUnique } from './stats.js';
 import http from 'http';
 import express from 'express';
 import cors from 'cors';
@@ -35,6 +36,13 @@ const io = new Server(server, {
   pingInterval: 20000,
   pingTimeout: 25000,
 });
+
+setInterval(() => {
+  const total = countSessions();
+  const waiting = Object.values(queueSizes()).reduce((a, b) => a + b, 0);
+  const uniqueTotal = getTotalUnique();
+  io.emit('online_count', { total, waiting, uniqueTotal });
+}, 5000);
 
 io.on('connection', (socket) => registerHandlers(io, socket));
 

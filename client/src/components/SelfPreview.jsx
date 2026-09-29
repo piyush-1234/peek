@@ -42,15 +42,15 @@ export default function SelfPreview({ localVideoRef, onReady, onLeave }) {
 }
 
 const styles = {
-  wrap: { minHeight: '100vh', background: '#0e0e10', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: 'system-ui' },
-  videoBox: { position: 'relative', width: '100%', maxWidth: 480, aspectRatio: '4/3', background: '#000', borderRadius: 16, overflow: 'hidden' },
+  wrap: { minHeight: '100vh', background: 'radial-gradient(900px 600px at 30% 20%, #f3e8ff 0%, transparent 60%), radial-gradient(700px 500px at 80% 80%, #fce7f3 0%, transparent 60%), #fdfaff', color: '#2d1b4e', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: "'Poppins', system-ui" },
+  videoBox: { position: 'relative', width: '100%', maxWidth: 480, aspectRatio: '4/3', background: '#000', borderRadius: 24, overflow: 'hidden', boxShadow: '0 20px 50px -15px rgba(168,85,247,0.5)', border: '3px solid #fff' },
   video: { width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' },
   countdownOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)' },
-  countdownNumber: { fontSize: 96, fontWeight: 700 },
+  countdownNumber: { fontSize: 96, fontWeight: 700, color: '#fff', fontFamily: "'Fredoka', sans-serif" },
   info: { textAlign: 'center', marginTop: 24, maxWidth: 400 },
-  h2: { fontSize: 22, margin: '0 0 8px' },
-  sub: { color: '#999', fontSize: 14, margin: 0 },
+  h2: { fontFamily: "'Fredoka', sans-serif", fontSize: 26, margin: '0 0 8px', color: '#2d1b4e' },
+  sub: { color: '#6b5b8a', fontSize: 14, margin: 0 },
   controls: { display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap', justifyContent: 'center' },
-  btnPrimary: { padding: '14px 32px', fontSize: 16, background: '#fff', color: '#000', border: 'none', borderRadius: 999, cursor: 'pointer', fontWeight: 600 },
-  btnGhost: { padding: '14px 24px', fontSize: 16, background: 'transparent', color: '#999', border: '1px solid #333', borderRadius: 999, cursor: 'pointer' },
+  btnPrimary: { padding: '16px 40px', fontSize: 16, background: 'linear-gradient(135deg, #a855f7, #ec4899)', color: '#fff', border: 'none', borderRadius: 999, cursor: 'pointer', fontWeight: 600, fontFamily: "'Fredoka', sans-serif", boxShadow: '0 14px 30px -8px rgba(168,85,247,0.5)' },
+  btnGhost: { padding: '16px 32px', fontSize: 15, background: 'transparent', color: '#6b5b8a', border: '1px solid #e8e0f5', borderRadius: 999, cursor: 'pointer', fontWeight: 500 },
 };
