@@ -20,7 +20,6 @@ const FEATURES = [
 
 export default function Landing({ onStart, online }) {
   const [region, setRegion] = useState('anywhere');
-  const [showRegions, setShowRegions] = useState(false);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   useEffect(() => {
@@ -38,8 +37,6 @@ export default function Landing({ onStart, online }) {
     onStart(region);
   };
 
-  const selectedRegion = REGIONS.find((r) => r.id === region);
-
   return (
     <div className="landing">
       <div className="blob blob-a" />
@@ -47,7 +44,15 @@ export default function Landing({ onStart, online }) {
       <div className="blob blob-c" />
       <div className="blob blob-d" />
 
-      <Nav online={online} onLogoClick={() => {}} showStats />
+      <Nav
+        online={online}
+        onLogoClick={() => {}}
+        showStats
+        showRegionSelector
+        region={region}
+        onRegionChange={setRegion}
+        regions={REGIONS}
+      />
 
       <main className="hero">
         <div className="hero-left">
@@ -62,36 +67,13 @@ export default function Landing({ onStart, online }) {
 
           <div className="pills">
             <span className="pill pill-blue">🌍 Global Random Chats</span>
+            <span className="pill pill-cyan">👥 1 to Many Chat</span>
             <span className="pill pill-yellow">👑 Rewards & Gifting</span>
             <span className="pill pill-purple">🎮 Games Together</span>
             <span className="pill pill-orange">🍕 Order Food & Treat</span>
           </div>
 
-          <div className="cta-block">
-            <button
-              className="region-selector"
-              onClick={() => setShowRegions((v) => !v)}
-              aria-expanded={showRegions}
-            >
-              <span className="region-selector-value">{selectedRegion?.label}</span>
-              <span className={`region-chevron ${showRegions ? 'open' : ''}`}>▾</span>
-            </button>
-
-            {showRegions && (
-              <div className="region-list">
-                {REGIONS.map((r) => (
-                  <button
-                    key={r.id}
-                    className={`region-item ${r.id === region ? 'active' : ''}`}
-                    onClick={() => { setRegion(r.id); setShowRegions(false); }}
-                  >
-                    <span className="region-item-label">{r.label}</span>
-                    <span className="region-item-sub">{r.sub}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
+                    <div className="cta-block">
             <label className="age-check">
               <input
                 type="checkbox"
@@ -101,13 +83,22 @@ export default function Landing({ onStart, online }) {
               <span>I am 18 or older</span>
             </label>
 
-            <button
-              className="cta"
-              disabled={!ageConfirmed}
-              onClick={handleStart}
-            >
-              Start Chatting Now →
-            </button>
+            <div className="cta-dual">
+              <button
+                className="cta cta-video"
+                disabled={!ageConfirmed}
+                onClick={() => onStart(region, 'video')}
+              >
+                📹 Video Chat
+              </button>
+              <button
+                className="cta cta-text"
+                disabled={!ageConfirmed}
+                onClick={() => onStart(region, 'text')}
+              >
+                💬 Text Chat
+              </button>
+            </div>
 
             <p className="footnote">Every chat is moderated. Leave anytime with one tap.</p>
           </div>

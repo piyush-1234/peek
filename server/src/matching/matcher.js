@@ -43,7 +43,7 @@ export function startMatcher(io) {
         io.to(aId).emit('matched', { peerId: bId, initiator: aIsInitiator, region });
         io.to(bId).emit('matched', { peerId: aId, initiator: !aIsInitiator, region });
 
-        log.info(`Matched ${aId} <-> ${bId} [${region}]`);
+        log.info('Matched', { a: aId, b: bId, queue: region });
       }
     }
   }, config.matchIntervalMs);
