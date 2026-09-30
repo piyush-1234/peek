@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { VideoState } from '../hooks/useVideoChat.js';
 import Icebreaker from './Icebreaker.jsx';
 import Nav from './Nav.jsx';
+import ChatSidebar from './ChatSidebar.jsx';
 
 export default function VideoRoom({ chat, region }) {
   const {
     state, error, online,
+    peerId,
     localVideoRef, remoteVideoRef, localStreamRef,
     next, retry, leave, report,
   } = chat;
@@ -38,59 +40,63 @@ export default function VideoRoom({ chat, region }) {
       <Nav online={online} onLogoClick={leave} showStats />
 
       <div className="room-inner">
-        <div className="room-videos">
-          <video ref={remoteVideoRef} autoPlay playsInline className="room-remote" />
+        <div className="room-main">
+          <div className="room-videos">
+            <video ref={remoteVideoRef} autoPlay playsInline className="room-remote" />
 
-          <div className="room-local-wrap">
-            <video ref={localVideoRef} autoPlay playsInline muted className="room-local" />
-            <span className="room-local-label">You</span>
+            <div className="room-local-wrap">
+              <video ref={localVideoRef} autoPlay playsInline muted className="room-local" />
+              <span className="room-local-label">You</span>
+            </div>
+
+            {isLive && (
+              <div className="room-live-badge">
+                <span className="room-live-dot" />
+                LIVE
+              </div>
+            )}
+
+            {isLive && <Icebreaker visible />}
+
+            {showOverlay && (
+              <div className="room-overlay">
+                {state === VideoState.WAITING && <div className="room-spinner" aria-hidden="true" />}
+                <div className="room-overlay-text">{overlayText}</div>
+                {state === VideoState.WAITING && online?.waiting > 0 && (
+                  <div className="room-overlay-sub">
+                    {online.waiting} {online.waiting === 1 ? 'person is' : 'people are'} waiting with you
+                  </div>
+                )}
+                {state === VideoState.WAITING && online?.total <= 1 && (
+                  <div className="room-overlay-tip">
+                    💡 Tip: Invite a friend — matches happen faster with more people online
+                  </div>
+                )}
+                {state === VideoState.FAILED && (
+                  <button className="room-btn room-btn-primary" onClick={() => retry(region)}>
+                    Try again
+                  </button>
+                )}
+              </div>
+            )}
+
+            {state === VideoState.DISCONNECTED && (
+              <div className="room-overlay">
+                <div className="room-overlay-emoji">👋</div>
+                <div className="room-overlay-text">They left the chat</div>
+                <div className="room-overlay-buttons">
+                  <button className="room-btn room-btn-primary" onClick={() => next(region)}>
+                    Meet someone new
+                  </button>
+                  <button className="room-btn room-btn-danger" onClick={leave}>
+                    Leave
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {isLive && (
-            <div className="room-live-badge">
-              <span className="room-live-dot" />
-              LIVE
-            </div>
-          )}
-
-          {isLive && <Icebreaker visible />}
-
-          {showOverlay && (
-            <div className="room-overlay">
-              {state === VideoState.WAITING && <div className="room-spinner" aria-hidden="true" />}
-              <div className="room-overlay-text">{overlayText}</div>
-              {state === VideoState.WAITING && online?.waiting > 0 && (
-                <div className="room-overlay-sub">
-                  {online.waiting} {online.waiting === 1 ? 'person is' : 'people are'} waiting with you
-                </div>
-              )}
-              {state === VideoState.WAITING && online?.total <= 1 && (
-                <div className="room-overlay-tip">
-                  💡 Tip: Invite a friend — matches happen faster with more people online
-                </div>
-              )}
-              {state === VideoState.FAILED && (
-                <button className="room-btn room-btn-primary" onClick={() => retry(region)}>
-                  Try again
-                </button>
-              )}
-            </div>
-          )}
-
-          {state === VideoState.DISCONNECTED && (
-            <div className="room-overlay">
-              <div className="room-overlay-emoji">👋</div>
-              <div className="room-overlay-text">They left the chat</div>
-              <div className="room-overlay-buttons">
-                <button className="room-btn room-btn-primary" onClick={() => next(region)}>
-                  Meet someone new
-                </button>
-                <button className="room-btn room-btn-danger" onClick={leave}>
-                  Leave
-                </button>
-              </div>
-            </div>
-          )}
+          <ChatSidebar peerId={peerId} visible={isLive} />
         </div>
 
         <div className="room-controls">

@@ -21,6 +21,7 @@ export function createSession(socketId) {
     socketId,
     state: SessionState.IDLE,
     region: null,
+    mode: null,
     peerId: null,
     initiator: false,
     createdAt: Date.now(),
