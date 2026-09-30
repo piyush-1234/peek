@@ -202,8 +202,9 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
 .online-pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
   background: #fff;
   border: 1px solid #f0e0ff;
   border-radius: 999px;
@@ -211,6 +212,9 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
   color: var(--peek-ink);
   font-weight: 500;
   box-shadow: 0 4px 12px rgba(168, 85, 247, 0.08);
+  height: 34px;
+  line-height: 1;
+  white-space: nowrap;
 }
 .dot-live {
   width: 8px; height: 8px; border-radius: 50%;
@@ -221,13 +225,17 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
 .unique-pill {
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
+  justify-content: center;
+  padding: 0 14px;
   background: #fff;
   border: 1px solid #e8e0f5;
   border-radius: 999px;
   font-size: 13px;
   color: var(--peek-ink-soft);
   font-weight: 500;
+  height: 34px;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .age-check {
@@ -587,8 +595,9 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
 
 .nav-stats {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
   justify-content: flex-end;
 }
 
@@ -662,35 +671,43 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
 /* ---------- PREVIEW PAGE ---------- */
 .preview-page {
   position: relative;
-  min-height: 100vh;
-  overflow-x: hidden;
+  height: 100vh;
+  overflow: hidden;
   background: radial-gradient(1000px 700px at 30% 20%, #f3e8ff 0%, transparent 60%),
               radial-gradient(800px 600px at 80% 80%, #fce7f3 0%, transparent 60%),
               #fdfaff;
-  padding-bottom: 40px;
+  display: flex;
+  flex-direction: column;
 }
 .preview-inner {
   position: relative;
   z-index: 2;
-  max-width: 600px;
-  margin: 20px auto 0;
-  padding: 0 24px 60px;
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 8px 24px 16px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
 }
 .preview-video-box {
   position: relative;
   width: 100%;
-  max-width: 500px;
+  max-width: 420px;
   aspect-ratio: 4 / 3;
+  max-height: 46vh;
   background: #000;
-  border-radius: 28px;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 30px 70px -20px rgba(168, 85, 247, 0.55),
-              0 0 0 4px #fff,
-              0 0 0 6px #f0e0ff;
+  box-shadow: 0 24px 60px -20px rgba(168, 85, 247, 0.5),
+              0 0 0 3px #fff,
+              0 0 0 5px #f0e0ff;
+  flex-shrink: 0;
 }
 .preview-video {
   width: 100%; height: 100%;
@@ -724,23 +741,23 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
   color: #fff;
   text-shadow: 0 0 40px rgba(168, 85, 247, 0.9);
 }
-.preview-info { margin: 28px 0 24px; max-width: 420px; }
+.preview-info { margin: 4px 0 0; max-width: 420px; }
 .preview-title {
-  font-size: 28px;
-  margin: 0 0 8px;
+  font-size: 24px;
+  margin: 0 0 6px;
   color: var(--peek-ink);
 }
-.preview-sub { font-size: 15px; color: var(--peek-ink-soft); margin: 0; line-height: 1.55; }
-
+.preview-sub { font-size: 14px; color: var(--peek-ink-soft); margin: 0; line-height: 1.5; }
 .preview-controls {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
+  margin-top: 4px;
 }
 .preview-btn-primary {
-  padding: 16px 42px;
-  font-size: 17px;
+  padding: 14px 36px;
+  font-size: 16px;
   font-weight: 600;
   color: #fff;
   background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
@@ -754,8 +771,8 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
 .preview-btn-primary:not(:disabled):hover { transform: translateY(-2px); }
 
 .preview-btn-ghost {
-  padding: 16px 30px;
-  font-size: 15px;
+  padding: 14px 26px;
+  font-size: 14px;
   font-weight: 500;
   color: #7c3aed;
   background: #fff;
@@ -1049,8 +1066,8 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap;
   justify-content: flex-end;
 }
 
@@ -1061,8 +1078,9 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
 .nav-region-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
   background: #fff;
   border: 1px solid #f0e0ff;
   border-radius: 999px;
@@ -1072,7 +1090,9 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
   box-shadow: 0 4px 12px rgba(168, 85, 247, 0.08);
   cursor: pointer;
   transition: all 0.2s;
-  height: 36px;
+  height: 34px;
+  line-height: 1;
+  white-space: nowrap;
 }
 .nav-region-btn:hover {
   border-color: #d8b4fe;
@@ -1125,9 +1145,41 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
 /* Remove old .region-selector, .region-list, .region-item rules — delete them */
 
 @media (max-width: 900px) {
-  .nav-right { gap: 6px; flex-wrap: nowrap; overflow-x: auto; }
-  .nav-region-btn { padding: 8px 12px; font-size: 12px; white-space: nowrap; }
-  .online-pill, .unique-pill { font-size: 11px; padding: 5px 10px; white-space: nowrap; }
+  .nav {
+    padding: 12px 4vw;
+    gap: 8px;
+  }
+  .nav-logo { height: 40px; }
+  .nav-right {
+    gap: 6px;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    overflow: visible;
+  }
+  .nav-region-btn,
+  .online-pill,
+  .unique-pill {
+    height: 30px;
+    padding: 0 10px;
+    font-size: 11.5px;
+    gap: 5px;
+    line-height: 1;
+  }
+  .dot-live { width: 6px; height: 6px; box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2); }
+}
+
+@media (max-width: 420px) {
+  .nav { padding: 10px 3vw; gap: 6px; }
+  .nav-logo { height: 34px; }
+  .nav-region-btn,
+  .online-pill,
+  .unique-pill {
+    height: 28px;
+    padding: 0 8px;
+    font-size: 10.5px;
+    gap: 4px;
+  }
+  .nav-region-btn .region-chevron { font-size: 10px; }
 }
 
 
@@ -1858,7 +1910,7 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
   gap: 16px;
 }
 .preview-audio-mic {
-  font-size: 110px;
+  font-size: 72px;
   animation: pulse 1.8s ease-in-out infinite;
 }
 .preview-audio-live {
@@ -1902,3 +1954,21 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
 .text-bubble.emoji-only .text-bubble-content { font-size: 32px; }
 .chat-bubble.emoji-only.mine,
 .chat-bubble.emoji-only.theirs { background: transparent; }
+
+/* Compact nav in preview */
+.preview-page .nav {
+  padding: 10px 6vw;
+  flex-shrink: 0;
+}
+.preview-page .nav-logo { height: 44px; }
+
+@media (max-width: 640px) {
+  .preview-inner { padding: 4px 16px 12px; gap: 8px; }
+  .preview-video-box { max-width: 340px; max-height: 40vh; border-radius: 20px; }
+  .preview-title { font-size: 20px; margin-bottom: 4px; }
+  .preview-sub { font-size: 13px; }
+  .preview-btn-primary { padding: 12px 28px; font-size: 15px; }
+  .preview-btn-ghost { padding: 12px 20px; font-size: 13px; }
+  .preview-page .nav { padding: 8px 4vw; }
+  .preview-page .nav-logo { height: 36px; }
+}
