@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import Nav from './Nav.jsx';
 
-export default function SelfPreview({ localVideoRef, onReady, onLeave, online }) {
+export default function SelfPreview({ localVideoRef, onReady, onLeave, online, mode = 'video' }) {
   const [countdown, setCountdown] = useState(null);
+  const isAudio = mode === 'audio';
 
   const handleReady = () => {
     setCountdown(3);
@@ -21,20 +22,34 @@ export default function SelfPreview({ localVideoRef, onReady, onLeave, online })
       <Nav online={online} onLogoClick={onLeave} showStats />
 
       <div className="preview-inner">
-        <div className="preview-video-box">
-          <video ref={localVideoRef} autoPlay playsInline muted className="preview-video" />
+        <div className={`preview-video-box ${isAudio ? 'audio-mode' : ''}`}>
+          {isAudio ? (
+            <div className="preview-audio-only">
+              <div className="preview-audio-mic">🎙</div>
+              <div className="preview-audio-live">Mic is live</div>
+            </div>
+          ) : (
+            <video ref={localVideoRef} autoPlay playsInline muted className="preview-video" />
+          )}
+
           {countdown !== null && (
             <div className="preview-countdown-overlay">
               <div className="preview-countdown-number">{countdown}</div>
             </div>
           )}
-          <div className="preview-live-badge">● This is you</div>
+          <div className="preview-live-badge">
+            {isAudio ? '● Audio only' : '● This is you'}
+          </div>
         </div>
 
         <div className="preview-info">
-          <h2 className="preview-title">Looking good! ✨</h2>
+          <h2 className="preview-title">
+            {isAudio ? 'Mic ready 🎙' : 'Looking good! ✨'}
+          </h2>
           <p className="preview-sub">
-            Take a moment. When you're ready, we'll find someone new for you.
+            {isAudio
+              ? "You're in audio-only mode. Your video stays off. When you're ready, we'll find someone new."
+              : "Take a moment. When you're ready, we'll find someone new for you."}
           </p>
         </div>
 

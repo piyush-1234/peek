@@ -21,7 +21,8 @@ export default function App() {
         onStart={(r, m) => {
           setRegion(r);
           setMode(m);
-          if (m === 'video') videoChat.begin();
+          if (m === 'video') videoChat.begin('video');
+          else if (m === 'audio') videoChat.begin('audio');
           else if (m === 'text') textChat.start(r);
         }}
       />
@@ -45,7 +46,7 @@ export default function App() {
   }
 
   // ---- Video flow ----
-  if (mode === 'video') {
+  if (mode === 'video' || mode === 'audio') {
     if (videoChat.state === VideoState.IDLE) {
       setMode(null);
       return null;
@@ -66,6 +67,7 @@ export default function App() {
           onReady={() => videoChat.confirmReady(region)}
           onLeave={() => { videoChat.leave(); setMode(null); }}
           online={videoChat.online}
+          mode={mode}
         />
       );
     }

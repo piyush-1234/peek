@@ -89,18 +89,28 @@ export default function Landing({ onStart, online }) {
                 disabled={!ageConfirmed}
                 onClick={() => onStart(region, 'video')}
               >
-                📹 Video Chat
+                <span className="cta-icon">📹</span>
+                <span className="cta-text-label">Video</span>
+              </button>
+              <button
+                className="cta cta-audio"
+                disabled={!ageConfirmed}
+                onClick={() => onStart(region, 'audio')}
+              >
+                <span className="cta-icon">🎙</span>
+                <span className="cta-text-label">Audio</span>
               </button>
               <button
                 className="cta cta-text"
                 disabled={!ageConfirmed}
                 onClick={() => onStart(region, 'text')}
               >
-                💬 Text Chat
+                <span className="cta-icon">💬</span>
+                <span className="cta-text-label">Text</span>
               </button>
             </div>
 
-            <p className="footnote">Every chat is moderated. Leave anytime with one tap.</p>
+            <p className="footnote">Every chat is moderated · Leave anytime with one tap</p>
           </div>
         </div>
 

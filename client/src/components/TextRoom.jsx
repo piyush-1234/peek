@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { TextState } from '../hooks/useTextChat.js';
 import Nav from './Nav.jsx';
+import EmojiPicker from './EmojiPicker.jsx';
 
 export default function TextRoom({ chat, region, onLeave }) {
   const { state, peerId, messages, online, sendMessage, next, leave } = chat;
   const [input, setInput] = useState('');
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const bottomRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSend = (e) => {
@@ -18,6 +19,12 @@ export default function TextRoom({ chat, region, onLeave }) {
     if (!input.trim()) return;
     sendMessage(input);
     setInput('');
+    setEmojiOpen(false);
+  };
+
+  const handleEmoji = (emoji) => {
+    setInput((v) => (v + emoji).slice(0, 1000));
+    inputRef.current?.focus();
   };
 
   return (
@@ -26,41 +33,26 @@ export default function TextRoom({ chat, region, onLeave }) {
 
       <div className="text-inner">
         <div className="text-card">
-          {/* header */}
+          <div className="text-card-liquid" aria-hidden="true">
+            <div className="liquid-blob liquid-blob-1" />
+            <div className="liquid-blob liquid-blob-2" />
+            <div className="liquid-blob liquid-blob-3" />
+          </div>
+
           <div className="text-header">
             <div className="text-header-status">
-              {state === TextState.CONNECTED && (
-                <>
-                  <span className="text-status-dot" />
-                  <span>Connected to a stranger</span>
-                </>
-              )}
-              {state === TextState.WAITING && (
-                <>
-                  <span className="text-status-dot waiting" />
-                  <span>Finding someone…</span>
-                </>
-              )}
-              {state === TextState.DISCONNECTED && (
-                <>
-                  <span className="text-status-dot offline" />
-                  <span>They left the chat</span>
-                </>
-              )}
+              {state === TextState.CONNECTED && (<><span className="text-status-dot" /><span>Connected to a stranger</span></>)}
+              {state === TextState.WAITING && (<><span className="text-status-dot waiting" /><span>Finding someone…</span></>)}
+              {state === TextState.DISCONNECTED && (<><span className="text-status-dot offline" /><span>They left the chat</span></>)}
             </div>
             <div className="text-header-actions">
               {state === TextState.CONNECTED && (
-                <button className="text-btn-mini" onClick={() => next(region)}>
-                  Next
-                </button>
+                <button className="text-btn-mini" onClick={() => next(region)}>Next</button>
               )}
-              <button className="text-btn-mini text-btn-danger" onClick={leave}>
-                Leave
-              </button>
+              <button className="text-btn-mini text-btn-danger" onClick={leave}>Leave</button>
             </div>
           </div>
 
-          {/* body */}
           <div className="text-body">
             {state === TextState.WAITING && (
               <div className="text-empty">
@@ -79,12 +71,8 @@ export default function TextRoom({ chat, region, onLeave }) {
                 <div className="text-empty-emoji">👋</div>
                 <div className="text-empty-title">They left the chat</div>
                 <div className="text-empty-actions">
-                  <button className="text-btn-primary" onClick={() => next(region)}>
-                    Meet someone new
-                  </button>
-                  <button className="text-btn-ghost" onClick={leave}>
-                    Leave
-                  </button>
+                  <button className="text-btn-primary" onClick={() => next(region)}>Meet someone new</button>
+                  <button className="text-btn-ghost" onClick={leave}>Leave</button>
                 </div>
               </div>
             )}
@@ -92,9 +80,7 @@ export default function TextRoom({ chat, region, onLeave }) {
             {state === TextState.CONNECTED && (
               <div className="text-messages">
                 {messages.length === 0 && (
-                  <div className="text-hello">
-                    Say hi 👋 — this chat is private and disappears when you leave.
-                  </div>
+                  <div className="text-hello">Say hi 👋 — this chat is private and disappears when you leave.</div>
                 )}
                 {messages.map((m, i) => (
                   <div key={i} className={`text-bubble ${m.mine ? 'mine' : 'theirs'}`}>
@@ -106,10 +92,24 @@ export default function TextRoom({ chat, region, onLeave }) {
             )}
           </div>
 
-          {/* input */}
           {state === TextState.CONNECTED && (
             <form className="text-input-row" onSubmit={handleSend}>
+              <div className="chat-emoji-wrap">
+                <button
+                  type="button"
+                  className="chat-emoji-trigger"
+                  onClick={() => setEmojiOpen((v) => !v)}
+                  title="Emoji"
+                >
+                  😊
+                </button>
+                {emojiOpen && (
+                  <EmojiPicker onPick={handleEmoji} onClose={() => setEmojiOpen(false)} />
+                )}
+              </div>
+
               <input
+                ref={inputRef}
                 className="text-input"
                 type="text"
                 value={input}
@@ -118,9 +118,7 @@ export default function TextRoom({ chat, region, onLeave }) {
                 maxLength={1000}
                 autoFocus
               />
-              <button className="text-send" type="submit" disabled={!input.trim()}>
-                Send
-              </button>
+              <button className="text-send" type="submit" disabled={!input.trim()}>Send</button>
             </form>
           )}
         </div>

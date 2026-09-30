@@ -6,10 +6,10 @@ import ChatSidebar from './ChatSidebar.jsx';
 
 export default function VideoRoom({ chat, region }) {
   const {
-    state, error, online,
-    peerId,
+    state, error, online, peerId,
+    videoEnabled, peerVideoEnabled,
     localVideoRef, remoteVideoRef, localStreamRef,
-    next, retry, leave, report,
+    next, retry, leave, report, toggleVideo,
   } = chat;
   const [reportOpen, setReportOpen] = useState(false);
 
@@ -44,15 +44,28 @@ export default function VideoRoom({ chat, region }) {
           <div className="room-videos">
             <video ref={remoteVideoRef} autoPlay playsInline className="room-remote" />
 
-            <div className="room-local-wrap">
-              <video ref={localVideoRef} autoPlay playsInline muted className="room-local" />
+            {isLive && !peerVideoEnabled && (
+              <div className="room-audio-only">
+                <div className="room-audio-avatar">🎙</div>
+                <div className="room-audio-label">Audio-only chat</div>
+              </div>
+            )}
+
+            <div className={`room-local-wrap ${!videoEnabled ? 'audio-only' : ''}`}>
+              {videoEnabled ? (
+                <video ref={localVideoRef} autoPlay playsInline muted className="room-local" />
+              ) : (
+                <div className="room-local-audio">
+                  <div className="room-local-mic">🎙</div>
+                </div>
+              )}
               <span className="room-local-label">You</span>
             </div>
 
             {isLive && (
               <div className="room-live-badge">
                 <span className="room-live-dot" />
-                LIVE
+                {videoEnabled ? 'LIVE' : 'AUDIO'}
               </div>
             )}
 
@@ -65,11 +78,6 @@ export default function VideoRoom({ chat, region }) {
                 {state === VideoState.WAITING && online?.waiting > 0 && (
                   <div className="room-overlay-sub">
                     {online.waiting} {online.waiting === 1 ? 'person is' : 'people are'} waiting with you
-                  </div>
-                )}
-                {state === VideoState.WAITING && online?.total <= 1 && (
-                  <div className="room-overlay-tip">
-                    💡 Tip: Invite a friend — matches happen faster with more people online
                   </div>
                 )}
                 {state === VideoState.FAILED && (
@@ -101,6 +109,14 @@ export default function VideoRoom({ chat, region }) {
 
         <div className="room-controls">
           <button
+            className={`room-ctrl ${videoEnabled ? 'room-ctrl-audio' : 'room-ctrl-video-on'}`}
+            onClick={toggleVideo}
+          >
+            <span className="room-ctrl-icon">{videoEnabled ? '🎙' : '📹'}</span>
+            <span className="room-ctrl-label">{videoEnabled ? 'Audio only' : 'Video on'}</span>
+          </button>
+
+          <button
             className="room-ctrl room-ctrl-next"
             onClick={() => next(region)}
             disabled={state === VideoState.WAITING}
@@ -118,10 +134,7 @@ export default function VideoRoom({ chat, region }) {
             <span className="room-ctrl-label">Report</span>
           </button>
 
-          <button
-            className="room-ctrl room-ctrl-leave"
-            onClick={leave}
-          >
+          <button className="room-ctrl room-ctrl-leave" onClick={leave}>
             <span className="room-ctrl-icon">✕</span>
             <span className="room-ctrl-label">Leave</span>
           </button>
