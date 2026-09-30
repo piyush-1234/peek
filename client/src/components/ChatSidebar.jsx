@@ -56,11 +56,17 @@ export default function ChatSidebar({ peerId, visible }) {
         {!peerId && (
           <div className="chat-sidebar-empty muted">Waiting for a match…</div>
         )}
-        {messages.map((m, i) => (
-          <div key={i} className={`chat-bubble ${m.mine ? 'mine' : 'theirs'}`}>
-            {m.text}
-          </div>
-        ))}
+        {messages.map((m, i) => {
+          const isEmojiOnly = /^[\p{Emoji}\s]+$/u.test(m.text) && m.text.trim().length > 0;
+          return (
+            <div
+              key={i}
+              className={`chat-bubble ${m.mine ? 'mine' : 'theirs'} ${isEmojiOnly ? 'emoji-only' : ''}`}
+            >
+              {m.text}
+            </div>
+          );
+        })}
         <div ref={bottomRef} />
       </div>
 
