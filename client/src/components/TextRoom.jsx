@@ -82,11 +82,17 @@ export default function TextRoom({ chat, region, onLeave }) {
                 {messages.length === 0 && (
                   <div className="text-hello">Say hi 👋 — this chat is private and disappears when you leave.</div>
                 )}
-                {messages.map((m, i) => (
-                  <div key={i} className={`text-bubble ${m.mine ? 'mine' : 'theirs'}`}>
-                    <div className="text-bubble-content">{m.text}</div>
-                  </div>
-                ))}
+                {messages.map((m, i) => {
+                  const isEmojiOnly = /^[\p{Emoji}\s]+$/u.test(m.text) && m.text.trim().length > 0;
+                  return (
+                    <div
+                      key={i}
+                      className={`text-bubble ${m.mine ? 'mine' : 'theirs'} ${isEmojiOnly ? 'emoji-only' : ''}`}
+                    >
+                      <div className="text-bubble-content">{m.text}</div>
+                    </div>
+                  );
+                })}
                 <div ref={bottomRef} />
               </div>
             )}
