@@ -107,6 +107,13 @@ export function registerHandlers(io, socket) {
     relaySignal(io, socket, msg);
   });
 
+  socket.on('video_state', ({ to, enabled } = {}) => {
+    const s = getSession(socket.id);
+    if (!s || s.state !== SessionState.MATCHED) return;
+    if (s.peerId !== to) return;
+    io.to(to).emit('video_state', { enabled: !!enabled });
+  });
+
   // Text message relay — no storage, no history
   socket.on('text_message', ({ to, text } = {}) => {
     const s = getSession(socket.id);

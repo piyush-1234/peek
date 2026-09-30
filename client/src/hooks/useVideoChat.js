@@ -18,7 +18,6 @@ const AUDIO_FADE_MS = 1500;
 
 async function fetchIceServers() {
   try {
-    // const base = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
     const base = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
     const res = await fetch(`${base}/ice`);
     const data = await res.json();
@@ -34,6 +33,8 @@ export function useVideoChat() {
   const [initiator, setInitiator] = useState(false);
   const [error, setError] = useState(null);
   const [online, setOnline] = useState({ total: 0, waiting: 0, uniqueTotal: 0 });
+  const [videoEnabled, setVideoEnabled] = useState(true);
+  const [peerVideoEnabled, setPeerVideoEnabled] = useState(true);
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -49,8 +50,9 @@ export function useVideoChat() {
   const mountedRef = useRef(true);
   const generationRef = useRef(0);
   const audioFadeRef = useRef(null);
+  const videoSenderRef = useRef(null);
+  const entryModeRef = useRef('video');
 
-  // ---- Video attach ----
   const attachLocal = useCallback((stream) => {
     if (localVideoRef.current) localVideoRef.current.srcObject = stream;
   }, []);
@@ -59,8 +61,6 @@ export function useVideoChat() {
     const el = remoteVideoRef.current;
     if (!el) return;
     el.srcObject = stream;
-
-    // Audio fade-in: start muted, ramp volume to 1
     el.volume = 0;
     if (audioFadeRef.current) clearInterval(audioFadeRef.current);
     const steps = 30;
@@ -116,10 +116,12 @@ export function useVideoChat() {
     peerIdRef.current = null;
     initiatorRef.current = false;
     iceRestartCountRef.current = 0;
+    videoSenderRef.current = null;
 
     if (mountedRef.current) {
       setPeerId(null);
       setInitiator(false);
+      setPeerVideoEnabled(true);
     }
   }, [clearIceTimeout]);
 
@@ -144,9 +146,13 @@ export function useVideoChat() {
     const pc = new RTCPeerConnection({ iceServers: iceServersRef.current });
 
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => {
-        pc.addTrack(track, localStreamRef.current);
-      });
+      const audioTracks = localStreamRef.current.getAudioTracks();
+      audioTracks.forEach((t) => pc.addTrack(t, localStreamRef.current));
+
+      const videoTracks = localStreamRef.current.getVideoTracks();
+      if (videoTracks[0]) {
+        videoSenderRef.current = pc.addTrack(videoTracks[0], localStreamRef.current);
+      }
     }
 
     pc.ontrack = (event) => {
@@ -196,13 +202,11 @@ export function useVideoChat() {
     };
 
     pc.onicecandidateerror = () => {};
-
     pcRef.current = pc;
     armIceTimeout(pc, generation);
     return pc;
   }, [attachRemote, clearIceTimeout, armIceTimeout]);
 
-  // ---- Socket listeners ----
   useEffect(() => {
     mountedRef.current = true;
 
@@ -239,7 +243,6 @@ export function useVideoChat() {
       const pc = pcRef.current;
       if (!pc) return;
       if (from !== peerIdRef.current) return;
-
       const generation = generationRef.current;
 
       try {
@@ -248,12 +251,10 @@ export function useVideoChat() {
           if (pc.signalingState !== 'stable') return;
           await pc.setRemoteDescription(new RTCSessionDescription(payload));
           if (generation !== generationRef.current) return;
-
           for (const c of pendingCandidatesRef.current) {
             try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
           }
           pendingCandidatesRef.current = [];
-
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           if (generation !== generationRef.current) return;
@@ -263,7 +264,6 @@ export function useVideoChat() {
           if (pc.signalingState !== 'have-local-offer') return;
           await pc.setRemoteDescription(new RTCSessionDescription(payload));
           if (generation !== generationRef.current) return;
-
           for (const c of pendingCandidatesRef.current) {
             try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
           }
@@ -286,56 +286,57 @@ export function useVideoChat() {
       setState(VideoState.DISCONNECTED);
     };
 
+    const onVideoState = ({ enabled }) => {
+      if (!mountedRef.current) return;
+      setPeerVideoEnabled(enabled);
+    };
+
+    const onOnlineCount = (data) => {
+      if (!mountedRef.current) return;
+      setOnline(data);
+    };
+
     const onError = (err) => {
       if (!mountedRef.current) return;
       setError({ message: err?.message || 'Something went wrong' });
       setState(VideoState.FAILED);
     };
 
-        const onOnlineCount = (data) => {
-      if (!mountedRef.current) return;
-      setOnline(data);
-    };
-
     socket.on('matched', onMatched);
     socket.on('signal', onSignal);
     socket.on('peer_left', onPeerLeft);
-    socket.on('error', onError);
+    socket.on('video_state', onVideoState);
     socket.on('online_count', onOnlineCount);
+    socket.on('error', onError);
 
     return () => {
       socket.off('matched', onMatched);
       socket.off('signal', onSignal);
       socket.off('peer_left', onPeerLeft);
-      socket.off('error', onError);
+      socket.off('video_state', onVideoState);
       socket.off('online_count', onOnlineCount);
+      socket.off('error', onError);
     };
   }, [createPeer, teardownPeer]);
-  // ---- Moderation heartbeat (every 10s while connected) ----
-  useEffect(() => {
-    if (state !== VideoState.CONNECTED) return;
-    const interval = setInterval(() => {
-      socket.emit('moderation_sample', {
-        peerId: peerIdRef.current,
-        sample: null, // real version would send a base64-encoded frame
-      });
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [state]);
-  // ---- Public: begin (request media → PREVIEW state) ----
-  const begin = useCallback(async () => {
+
+  // ---- begin: mode = 'video' | 'audio' ----
+  const begin = useCallback(async (mode = 'video') => {
+    entryModeRef.current = mode;
     setError(null);
     setState(VideoState.REQUESTING_MEDIA);
     try {
       if (!localStreamRef.current) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 480 } },
-          audio: true,
-        });
+        const constraints = mode === 'audio'
+          ? { audio: true, video: false }
+          : { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: true };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         localStreamRef.current = stream;
       }
       if (!mountedRef.current) return;
-      // Attach after state change so element is mounted
+
+      const hasVideo = localStreamRef.current.getVideoTracks().length > 0;
+      setVideoEnabled(mode === 'video' && hasVideo);
+
       requestAnimationFrame(() => attachLocal(localStreamRef.current));
       setState(VideoState.PREVIEW);
     } catch (err) {
@@ -350,38 +351,93 @@ export function useVideoChat() {
     }
   }, [attachLocal]);
 
-  // ---- Public: confirm ready (enter queue) ----
   const confirmReady = useCallback((region) => {
-    if (!localStreamRef.current) return begin();
+    if (!localStreamRef.current) return begin('video');
     setState(VideoState.WAITING);
-    socket.emit('find_match', { region });
+    socket.emit('find_match', { region, mode: 'video' });
   }, [begin]);
 
-  // ---- Public: next ----
+  // ---- toggleVideo ----
+  const toggleVideo = useCallback(async () => {
+    const sender = videoSenderRef.current;
+    const stream = localStreamRef.current;
+    if (!stream) return;
+
+    if (videoEnabled) {
+      // Turn OFF
+      if (sender) { try { await sender.replaceTrack(null); } catch {} }
+      stream.getVideoTracks().forEach((t) => { try { t.stop(); } catch {} });
+      setVideoEnabled(false);
+      if (peerIdRef.current) {
+        socket.emit('video_state', { to: peerIdRef.current, enabled: false });
+      }
+    } else {
+      // Turn ON
+      try {
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 } },
+        });
+        const newTrack = newStream.getVideoTracks()[0];
+        if (!newTrack) return;
+        stream.getVideoTracks().forEach((t) => { try { stream.removeTrack(t); } catch {} });
+        stream.addTrack(newTrack);
+        if (sender) {
+          try { await sender.replaceTrack(newTrack); } catch {}
+        }
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = null;
+          localVideoRef.current.srcObject = stream;
+        }
+        setVideoEnabled(true);
+        if (peerIdRef.current) {
+          socket.emit('video_state', { to: peerIdRef.current, enabled: true });
+        }
+      } catch (err) {
+        console.warn('toggleVideo on failed', err);
+      }
+    }
+  }, [videoEnabled]);
+
   const next = useCallback((region) => {
-    if (!localStreamRef.current) return begin();
+    if (!localStreamRef.current) return begin(entryModeRef.current);
     teardownPeer();
     setState(VideoState.WAITING);
     setError(null);
-    socket.emit('find_match', { region });
+
+    // Reset video to entry mode
+    const stream = localStreamRef.current;
+    if (entryModeRef.current === 'video' && stream.getVideoTracks().length === 0) {
+      navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } } })
+        .then((s) => {
+          const t = s.getVideoTracks()[0];
+          if (t) {
+            stream.addTrack(t);
+            setVideoEnabled(true);
+          }
+        })
+        .catch(() => {});
+    } else if (entryModeRef.current === 'audio' && stream.getVideoTracks().length > 0) {
+      stream.getVideoTracks().forEach((t) => { try { t.stop(); stream.removeTrack(t); } catch {} });
+      setVideoEnabled(false);
+    }
+
+    socket.emit('find_match', { region, mode: 'video' });
   }, [teardownPeer, begin]);
 
   const retry = next;
 
-  // ---- Public: leave ----
   const leave = useCallback(() => {
     socket.emit('leave');
     teardownPeer();
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((t) => {
-        try { t.stop(); } catch {}
-      });
+      localStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch {} });
       localStreamRef.current = null;
     }
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (mountedRef.current) {
       setState(VideoState.IDLE);
       setError(null);
+      setVideoEnabled(true);
     }
   }, [teardownPeer]);
 
@@ -394,19 +450,16 @@ export function useVideoChat() {
       mountedRef.current = false;
       teardownPeer();
       if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((t) => {
-          try { t.stop(); } catch {}
-        });
+        localStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch {} });
       }
       if (audioFadeRef.current) clearInterval(audioFadeRef.current);
     };
   }, [teardownPeer]);
 
-    return {
-    state, peerId, initiator, error,
-    online,
-    localVideoRef, remoteVideoRef,
-    localStreamRef,
-    begin, confirmReady, next, retry, leave, report,
+  return {
+    state, peerId, initiator, error, online,
+    videoEnabled, peerVideoEnabled,
+    localVideoRef, remoteVideoRef, localStreamRef,
+    begin, confirmReady, next, retry, leave, report, toggleVideo,
   };
 }
