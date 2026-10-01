@@ -3,7 +3,6 @@ import { useVideoChat, VideoState } from './hooks/useVideoChat.js';
 import { useTextChat, TextState } from './hooks/useTextChat.js';
 import Landing from './components/Landing.jsx';
 
-// Lazy-load heavy components — only fetched when needed
 const SelfPreview = lazy(() => import('./components/SelfPreview.jsx'));
 const VideoRoom = lazy(() => import('./components/VideoRoom.jsx'));
 const TextRoom = lazy(() => import('./components/TextRoom.jsx'));
@@ -28,6 +27,7 @@ function Loading() {
 export default function App() {
   const [region, setRegion] = useState('anywhere');
   const [mode, setMode] = useState(null);
+  const [interests, setInterests] = useState([]);
 
   const videoChat = useVideoChat();
   const textChat = useTextChat();
@@ -36,12 +36,13 @@ export default function App() {
     return (
       <Landing
         online={videoChat.online}
-        onStart={(r, m) => {
+        onStart={(r, m, ints = []) => {
           setRegion(r);
           setMode(m);
+          setInterests(ints);
           if (m === 'video') videoChat.begin('video');
           else if (m === 'audio') videoChat.begin('audio');
-          else if (m === 'text') textChat.start(r);
+          else if (m === 'text') textChat.start(r, ints);
         }}
       />
     );
@@ -74,7 +75,7 @@ export default function App() {
         <Suspense fallback={<Loading />}>
           <SelfPreview
             localVideoRef={videoChat.localVideoRef}
-            onReady={() => videoChat.confirmReady(region)}
+            onReady={() => videoChat.confirmReady(region, interests)}
             onLeave={() => { videoChat.leave(); setMode(null); }}
             online={videoChat.online}
             mode={mode}
@@ -85,7 +86,7 @@ export default function App() {
 
     return (
       <Suspense fallback={<Loading />}>
-        <VideoRoom chat={videoChat} region={region} />
+        <VideoRoom chat={videoChat} region={region} interests={interests} />
       </Suspense>
     );
   }

@@ -4,10 +4,11 @@ import Icebreaker from './Icebreaker.jsx';
 import Nav from './Nav.jsx';
 import ChatSidebar from './ChatSidebar.jsx';
 
-export default function VideoRoom({ chat, region }) {
+export default function VideoRoom({ chat, region, interests = [] }) {
   const {
     state, error, online, peerId,
     videoEnabled, peerVideoEnabled,
+    sharedInterests,
     localVideoRef, remoteVideoRef, localStreamRef,
     next, retry, leave, report, toggleVideo,
   } = chat;
@@ -69,6 +70,11 @@ export default function VideoRoom({ chat, region }) {
               </div>
             )}
 
+            {isLive && sharedInterests?.length > 0 && (
+              <div className="shared-interests">
+                🎯 You both like: {sharedInterests.map((i) => i).join(' · ')}
+              </div>
+            )}
             {isLive && <Icebreaker visible />}
 
             {showOverlay && (
@@ -93,7 +99,7 @@ export default function VideoRoom({ chat, region }) {
                 <div className="room-overlay-emoji">👋</div>
                 <div className="room-overlay-text">They left the chat</div>
                 <div className="room-overlay-buttons">
-                  <button className="room-btn room-btn-primary" onClick={() => next(region)}>
+                  <button className="room-btn room-btn-primary" onClick={() => next(region, interests)}>
                     Meet someone new
                   </button>
                   <button className="room-btn room-btn-danger" onClick={leave}>
@@ -118,7 +124,7 @@ export default function VideoRoom({ chat, region }) {
 
           <button
             className="room-ctrl room-ctrl-next"
-            onClick={() => next(region)}
+            onClick={() => next(region, interests)}
             disabled={state === VideoState.WAITING}
           >
             <span className="room-ctrl-icon">⏭</span>

@@ -3,8 +3,8 @@ import { TextState } from '../hooks/useTextChat.js';
 import Nav from './Nav.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
 
-export default function TextRoom({ chat, region, onLeave }) {
-  const { state, peerId, messages, online, sendMessage, next, leave } = chat;
+export default function TextRoom({ chat, region, onLeave, interests = [] }) {
+  const { state, peerId, messages, online, sharedInterests, sendMessage, next, leave } = chat;
   const [input, setInput] = useState('');
   const [emojiOpen, setEmojiOpen] = useState(false);
   const bottomRef = useRef(null);
@@ -41,13 +41,12 @@ export default function TextRoom({ chat, region, onLeave }) {
 
           <div className="text-header">
             <div className="text-header-status">
-              {state === TextState.CONNECTED && (<><span className="text-status-dot" /><span>Connected to a stranger</span></>)}
-              {state === TextState.WAITING && (<><span className="text-status-dot waiting" /><span>Finding someone…</span></>)}
+            {state === TextState.CONNECTED && (<><span className="text-status-dot" /><span>{sharedInterests?.length > 0 ? `You both like ${sharedInterests.join(' · ')}` : 'Connected to a stranger'}</span></>)}              {state === TextState.WAITING && (<><span className="text-status-dot waiting" /><span>Finding someone…</span></>)}
               {state === TextState.DISCONNECTED && (<><span className="text-status-dot offline" /><span>They left the chat</span></>)}
             </div>
             <div className="text-header-actions">
               {state === TextState.CONNECTED && (
-                <button className="text-btn-mini" onClick={() => next(region)}>Next</button>
+                <button className="text-btn-mini" onClick={() => next(region, interests)}>Next</button>
               )}
               <button className="text-btn-mini text-btn-danger" onClick={leave}>Leave</button>
             </div>
@@ -71,7 +70,7 @@ export default function TextRoom({ chat, region, onLeave }) {
                 <div className="text-empty-emoji">👋</div>
                 <div className="text-empty-title">They left the chat</div>
                 <div className="text-empty-actions">
-                  <button className="text-btn-primary" onClick={() => next(region)}>Meet someone new</button>
+                  <button className="text-btn-primary" onClick={() => next(region, interests)}>Meet someone new</button>
                   <button className="text-btn-ghost" onClick={leave}>Leave</button>
                 </div>
               </div>

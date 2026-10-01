@@ -35,6 +35,7 @@ export function useVideoChat() {
   const [online, setOnline] = useState({ total: 0, waiting: 0, uniqueTotal: 0 });
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [peerVideoEnabled, setPeerVideoEnabled] = useState(true);
+  const [sharedInterests, setSharedInterests] = useState([]);
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -210,7 +211,7 @@ export function useVideoChat() {
   useEffect(() => {
     mountedRef.current = true;
 
-    const onMatched = async ({ peerId: newPeerId, initiator: isInit }) => {
+      const onMatched = async ({ peerId: newPeerId, initiator: isInit, sharedInterests: si = [] }) => {
       if (!mountedRef.current) return;
       teardownPeer();
 
@@ -221,6 +222,7 @@ export function useVideoChat() {
       setInitiator(isInit);
       setState(VideoState.NEGOTIATING);
       setError(null);
+      setSharedInterests(si);
 
       try {
         const pc = await createPeer(generation);
@@ -351,10 +353,10 @@ export function useVideoChat() {
     }
   }, [attachLocal]);
 
-  const confirmReady = useCallback((region) => {
+  const confirmReady = useCallback((region, interests = []) => {
     if (!localStreamRef.current) return begin('video');
     setState(VideoState.WAITING);
-    socket.emit('find_match', { region, mode: 'video' });
+    socket.emit('find_match', { region, mode: 'video', interests });
   }, [begin]);
 
   // ---- toggleVideo ----
@@ -398,13 +400,12 @@ export function useVideoChat() {
     }
   }, [videoEnabled]);
 
-  const next = useCallback((region) => {
+  const next = useCallback((region, interests = []) => {
     if (!localStreamRef.current) return begin(entryModeRef.current);
     teardownPeer();
     setState(VideoState.WAITING);
     setError(null);
 
-    // Reset video to entry mode
     const stream = localStreamRef.current;
     if (entryModeRef.current === 'video' && stream.getVideoTracks().length === 0) {
       navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } } })
@@ -421,7 +422,7 @@ export function useVideoChat() {
       setVideoEnabled(false);
     }
 
-    socket.emit('find_match', { region, mode: 'video' });
+    socket.emit('find_match', { region, mode: 'video', interests });
   }, [teardownPeer, begin]);
 
   const retry = next;
@@ -457,8 +458,10 @@ export function useVideoChat() {
   }, [teardownPeer]);
 
   return {
-    state, peerId, initiator, error, online,
+    state, peerId, initiator, error,
+    online,
     videoEnabled, peerVideoEnabled,
+    sharedInterests,
     localVideoRef, remoteVideoRef, localStreamRef,
     begin, confirmReady, next, retry, leave, report, toggleVideo,
   };

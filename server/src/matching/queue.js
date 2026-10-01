@@ -41,3 +41,17 @@ export function queueSizes() {
 export function allRegions() {
   return Array.from(queues.keys());
 }
+
+export function peekQueue(region) {
+  return queues.get(region) || [];
+}
+
+export function removeFromQueue(region, socketId) {
+  const q = queues.get(region);
+  if (!q) return false;
+  const idx = q.indexOf(socketId);
+  if (idx === -1) return false;
+  q.splice(idx, 1);
+  if (q.length === 0) queues.delete(region);
+  return true;
+}

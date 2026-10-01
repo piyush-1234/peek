@@ -12,7 +12,7 @@ export function useTextChat() {
   const [state, setState] = useState(TextState.IDLE);
   const [peerId, setPeerId] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [online, setOnline] = useState({ total: 0, waiting: 0, uniqueTotal: 0 });
+  const [sharedInterests, setSharedInterests] = useState([]);
 
   const peerIdRef = useRef(null);
   const mountedRef = useRef(true);
@@ -25,10 +25,11 @@ export function useTextChat() {
       setState(TextState.WAITING);
     };
 
-    const onMatched = ({ peerId: newPeerId }) => {
+    const onMatched = ({ peerId: newPeerId, sharedInterests: si = [] }) => {
       if (!mountedRef.current) return;
       peerIdRef.current = newPeerId;
       setPeerId(newPeerId);
+      setSharedInterests(si);
       setMessages([]);
       setState(TextState.CONNECTED);
     };
@@ -80,10 +81,10 @@ export function useTextChat() {
     };
   }, []);
 
-  const start = useCallback((region) => {
+  const start = useCallback((region, interests = []) => {
     setMessages([]);
     setState(TextState.WAITING);
-    socket.emit('find_match', { region, mode: 'text' });
+    socket.emit('find_match', { region, mode: 'text', interests });
   }, []);
 
   const sendMessage = useCallback((text) => {
@@ -97,11 +98,11 @@ export function useTextChat() {
     ]);
   }, []);
 
-  const next = useCallback((region) => {
+  const next = useCallback((region, interests = []) => {
     setMessages([]);
     socket.emit('leave');
     setState(TextState.WAITING);
-    socket.emit('find_match', { region, mode: 'text' });
+    socket.emit('find_match', { region, mode: 'text', interests });
   }, []);
 
   const leave = useCallback(() => {
@@ -119,7 +120,7 @@ export function useTextChat() {
   }, []);
 
   return {
-    state, peerId, messages, online,
+    state, peerId, messages, online, sharedInterests,
     start, sendMessage, next, leave,
   };
 }

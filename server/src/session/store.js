@@ -22,10 +22,12 @@ export function createSession(socketId) {
     state: SessionState.IDLE,
     region: null,
     mode: null,
+    interests: [],
     peerId: null,
     initiator: false,
     createdAt: Date.now(),
     matchedAt: null,
+    waitingSince: null,
   };
   sessions.set(socketId, session);
   return session;

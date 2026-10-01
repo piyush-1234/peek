@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Nav from './Nav.jsx';
+import { INTERESTS, MAX_INTERESTS } from '../lib/interests.js';
 
 const REGIONS = [
   { id: 'anywhere', label: '🌍 Anywhere', sub: 'Match with anyone, worldwide' },
@@ -21,9 +22,17 @@ const FEATURES = [
 export default function Landing({ onStart, online }) {
   const [region, setRegion] = useState('anywhere');
   const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [selectedInterests, setSelectedInterests] = useState([]);
 
   useEffect(() => {
     if (localStorage.getItem('peek_age_ok') === '1') setAgeConfirmed(true);
+    const saved = localStorage.getItem('peek_interests');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setSelectedInterests(parsed.slice(0, MAX_INTERESTS));
+      } catch {}
+    }
   }, []);
 
   const handleAge = (checked) => {
@@ -32,9 +41,24 @@ export default function Landing({ onStart, online }) {
     else localStorage.removeItem('peek_age_ok');
   };
 
-  const handleStart = () => {
+  const toggleInterest = (id) => {
+    setSelectedInterests((prev) => {
+      let next;
+      if (prev.includes(id)) {
+        next = prev.filter((i) => i !== id);
+      } else if (prev.length < MAX_INTERESTS) {
+        next = [...prev, id];
+      } else {
+        next = [...prev.slice(1), id];
+      }
+      localStorage.setItem('peek_interests', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const handleStart = (mode) => {
     if (!ageConfirmed) return;
-    onStart(region);
+    onStart(region, mode, selectedInterests);
   };
 
   return (
@@ -62,7 +86,8 @@ export default function Landing({ onStart, online }) {
             Make <span className="grad-pink">Memories</span>!
           </h1>
           <p className="hero-sub">
-            Peek is a next-gen video chat platform where you can connect with people from around the world — chat, play, earn rewards, order food and more!
+            Peek connects you with a real person, somewhere in the world, right now.
+            No profiles. No history. No pressure.
           </p>
 
           <div className="pills">
@@ -73,7 +98,30 @@ export default function Landing({ onStart, online }) {
             <span className="pill pill-orange">🍕 Order Food & Treat</span>
           </div>
 
-                    <div className="cta-block">
+          <div className="interest-block">
+            <div className="interest-label">
+              What do you want to talk about? <span className="interest-optional">(optional)</span>
+            </div>
+            <div className="interest-chips">
+              {INTERESTS.map((i) => (
+                <button
+                  key={i.id}
+                  type="button"
+                  className={`interest-chip ${selectedInterests.includes(i.id) ? 'active' : ''}`}
+                  onClick={() => toggleInterest(i.id)}
+                >
+                  {i.label}
+                </button>
+              ))}
+            </div>
+            {selectedInterests.length > 0 && (
+              <div className="interest-hint">
+                We&apos;ll try to match you with someone who likes the same things.
+              </div>
+            )}
+          </div>
+
+          <div className="cta-block">
             <label className="age-check">
               <input
                 type="checkbox"
@@ -84,27 +132,15 @@ export default function Landing({ onStart, online }) {
             </label>
 
             <div className="cta-dual">
-              <button
-                className="cta cta-video"
-                disabled={!ageConfirmed}
-                onClick={() => onStart(region, 'video')}
-              >
+              <button className="cta cta-video" disabled={!ageConfirmed} onClick={() => handleStart('video')}>
                 <span className="cta-icon">📹</span>
                 <span className="cta-text-label">Video</span>
               </button>
-              <button
-                className="cta cta-audio"
-                disabled={!ageConfirmed}
-                onClick={() => onStart(region, 'audio')}
-              >
+              <button className="cta cta-audio" disabled={!ageConfirmed} onClick={() => handleStart('audio')}>
                 <span className="cta-icon">🎙</span>
                 <span className="cta-text-label">Audio</span>
               </button>
-              <button
-                className="cta cta-text"
-                disabled={!ageConfirmed}
-                onClick={() => onStart(region, 'text')}
-              >
+              <button className="cta cta-text" disabled={!ageConfirmed} onClick={() => handleStart('text')}>
                 <span className="cta-icon">💬</span>
                 <span className="cta-text-label">Text</span>
               </button>
@@ -132,7 +168,6 @@ export default function Landing({ onStart, online }) {
                 <button>❤️</button>
               </div>
             </div>
-
             <div className="float-badge fb-1">🎁 Send & Receive Rewards</div>
             <div className="float-badge fb-2">🎮 Play Games Together</div>
             <div className="float-badge fb-3">🍔 Order Food & Treat</div>
