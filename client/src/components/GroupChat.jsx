@@ -1,35 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
-import { socket } from '../lib/socket.js';
 import EmojiPicker from './EmojiPicker.jsx';
 
-export default function GroupChat({ roomId, visible }) {
-  const [messages, setMessages] = useState([]);
+const COLORS = ['#a855f7', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#6366f1'];
+
+function colorFor(socketId) {
+  if (!socketId) return '#a855f7';
+  let hash = 0;
+  for (let i = 0; i < socketId.length; i++) hash = (hash * 31 + socketId.charCodeAt(i)) | 0;
+  return COLORS[Math.abs(hash) % COLORS.length];
+}
+
+function initialsFor(socketId) {
+  if (!socketId || socketId === 'me') return 'Y';
+  return socketId.slice(0, 2).toUpperCase();
+}
+
+export default function GroupChat({ chat, visible }) {
+  const { messages, someoneTyping, sendGroupMessage, notifyGroupTyping } = chat;
   const [input, setInput] = useState('');
   const [emojiOpen, setEmojiOpen] = useState(false);
-  const [someoneTyping, setSomeoneTyping] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const typingTimerRef = useRef(null);
-  const myTypingRef = useRef(false);
-
-  useEffect(() => {
-    if (!visible) return;
-
-    const onTextMessage = ({ from, text, ts }) => {
-      setMessages((prev) => [...prev, { from, text, ts, mine: false }]);
-    };
-    const onTyping = ({ active }) => {
-      setSomeoneTyping(!!active);
-    };
-
-    socket.on('text_message', onTextMessage);
-    socket.on('typing', onTyping);
-
-    return () => {
-      socket.off('text_message', onTextMessage);
-      socket.off('typing', onTyping);
-    };
-  }, [visible]);
 
   useEffect(() => {
     if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -37,13 +29,22 @@ export default function GroupChat({ roomId, visible }) {
 
   const handleSend = (e) => {
     e?.preventDefault();
-    if (!input.trim() || !roomId) return;
-    // In group mode, send to room (server handles relay — but our current server relays to peerId only)
-    // We need a group-relay: emit text_message to all room members. Simplest: reuse socket room broadcast
-    // Actually our server doesn't have socket.io rooms for group — for now, we broadcast via a new event.
-    // Fallback: skip group text for now — will add in follow-up.
-    console.warn('Group chat message send not yet wired — coming soon');
+    if (!input.trim()) return;
+    sendGroupMessage(input);
     setInput('');
+    setEmojiOpen(false);
+  };
+
+  const handleChange = (e) => {
+    setInput(e.target.value);
+    notifyGroupTyping();
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {}, 1500);
+  };
+
+  const handleEmoji = (emoji) => {
+    setInput((v) => (v + emoji).slice(0, 1000));
+    inputRef.current?.focus();
   };
 
   if (!visible) return null;
@@ -59,16 +60,35 @@ export default function GroupChat({ roomId, visible }) {
         {messages.length === 0 && (
           <div className="chat-sidebar-empty">Say hi to the group 👋</div>
         )}
-        {messages.map((m, i) => (
-          <div key={i} className={`chat-bubble ${m.mine ? 'mine' : 'theirs'}`}>
-            {m.text}
-          </div>
-        ))}
+
+        {messages.map((m, i) => {
+          const isEmojiOnly = /^[\p{Emoji}\s]+$/u.test(m.text) && m.text.trim().length > 0;
+          return (
+            <div key={m.id || i} className={`group-msg-row ${m.mine ? 'mine' : ''}`}>
+              {!m.mine && (
+                <div
+                  className="group-msg-avatar"
+                  style={{ background: colorFor(m.from) }}
+                >
+                  {initialsFor(m.from)}
+                </div>
+              )}
+              <div className={`group-msg-bubble ${m.mine ? 'mine' : 'theirs'} ${isEmojiOnly ? 'emoji-only' : ''}`}>
+                {m.text}
+              </div>
+            </div>
+          );
+        })}
+
         {someoneTyping && (
-          <div className="chat-bubble theirs typing-bubble">
-            <span className="typing-dots"><span /><span /><span /></span>
+          <div className="group-msg-row">
+            <div className="group-msg-avatar" style={{ background: '#a78bfa' }}>…</div>
+            <div className="group-msg-bubble theirs typing-bubble">
+              <span className="typing-dots"><span /><span /><span /></span>
+            </div>
           </div>
         )}
+
         <div ref={bottomRef} />
       </div>
 
@@ -83,22 +103,20 @@ export default function GroupChat({ roomId, visible }) {
             😊
           </button>
           {emojiOpen && (
-            <EmojiPicker
-              onPick={(e) => setInput((v) => (v + e).slice(0, 1000))}
-              onClose={() => setEmojiOpen(false)}
-            />
+            <EmojiPicker onPick={handleEmoji} onClose={() => setEmojiOpen(false)} />
           )}
         </div>
+
         <input
           ref={inputRef}
           className="chat-sidebar-input"
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Group chat coming soon…"
-          disabled
+          onChange={handleChange}
+          placeholder="Message the group…"
+          maxLength={1000}
         />
-        <button className="chat-sidebar-send" type="submit" disabled>
+        <button className="chat-sidebar-send" type="submit" disabled={!input.trim()}>
           ➤
         </button>
       </form>

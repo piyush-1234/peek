@@ -207,8 +207,67 @@ export function registerHandlers(io, socket) {
     io.to(to).emit('signal', { from: socket.id, type, payload });
   });
 
-  socket.on('leave_group', () => {
+    socket.on('leave_group', () => {
     leaveRoom(io, socket);
+  });
+
+  // ---------- GROUP TEXT CHAT ----------
+  socket.on('group_text_message', ({ text } = {}) => {
+    const s = getSession(socket.id);
+    if (!s || !s.roomId) return;
+    const room = getRoom(s.roomId);
+    if (!room) return;
+    if (!text || typeof text !== 'string') return;
+    const trimmed = text.slice(0, 1000).trim();
+    if (!trimmed) return;
+
+    const payload = {
+      from: socket.id,
+      text: trimmed,
+      ts: Date.now(),
+      id: `${socket.id}-${Date.now().toString(36)}`,
+    };
+
+    for (const memberId of room.members) {
+      if (memberId !== socket.id) {
+        io.to(memberId).emit('group_text_message', payload);
+      }
+    }
+  });
+
+  socket.on('group_typing', ({ active } = {}) => {
+    const s = getSession(socket.id);
+    if (!s || !s.roomId) return;
+    const room = getRoom(s.roomId);
+    if (!room) return;
+
+    for (const memberId of room.members) {
+      if (memberId !== socket.id) {
+        io.to(memberId).emit('group_typing', {
+          from: socket.id,
+          active: !!active,
+        });
+      }
+    }
+  });
+
+  // ---------- GROUP GAME EVENTS ----------
+  socket.on('group_game_event', ({ event, payload } = {}) => {
+    const s = getSession(socket.id);
+    if (!s || !s.roomId) return;
+    const room = getRoom(s.roomId);
+    if (!room) return;
+    if (!event || typeof event !== 'string') return;
+
+    for (const memberId of room.members) {
+      if (memberId !== socket.id) {
+        io.to(memberId).emit('group_game_event', {
+          from: socket.id,
+          event,
+          payload: payload || {},
+        });
+      }
+    }
   });
   // Text message relay — no storage, no history
     socket.on('text_message', ({ to, text, id } = {}) => {

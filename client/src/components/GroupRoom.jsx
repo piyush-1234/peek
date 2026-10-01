@@ -1,22 +1,26 @@
-import GroupChat from './GroupChat.jsx';
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { GroupState } from '../hooks/useGroupChat.js';
 import Nav from './Nav.jsx';
 import GroupVideoGrid from './GroupVideoGrid.jsx';
+import GroupChat from './GroupChat.jsx';
+import GroupGamePanel from './GroupGamePanel.jsx';
 
 export default function GroupRoom({ chat, region }) {
+  const [gameOpen, setGameOpen] = useState(false);
   const {
     state, roomId, peers, error, online, videoEnabled,
     localVideoRef,
     toggleVideo, leave, report,
   } = chat;
 
+  const isLive = state === GroupState.CONNECTED || state === GroupState.CONNECTING;
+
   return (
     <div className="room-page">
       <Nav online={online} onLogoClick={leave} showStats />
 
       <div className="room-inner">
-        <div className="room-main">
+        <div className={`room-main ${gameOpen ? 'has-game' : ''}`}>
           <div className="room-videos group-videos-container">
             <GroupVideoGrid
               localVideoRef={localVideoRef}
@@ -42,14 +46,27 @@ export default function GroupRoom({ chat, region }) {
             )}
           </div>
 
-          {state === GroupState.CONNECTED && <GroupChat roomId={roomId} visible />}
+          {isLive && <GroupChat chat={chat} visible />}
+
+          {gameOpen && isLive && (
+            <GroupGamePanel chat={chat} onClose={() => setGameOpen(false)} />
+          )}
         </div>
 
         <div className="room-controls">
           <button
+            className="room-ctrl room-ctrl-game"
+            onClick={() => setGameOpen((v) => !v)}
+            disabled={!isLive}
+          >
+            <span className="room-ctrl-icon">{gameOpen ? '✕' : '🎮'}</span>
+            <span className="room-ctrl-label">{gameOpen ? 'End game' : 'Play game'}</span>
+          </button>
+
+          <button
             className="room-ctrl room-ctrl-group-invite"
             disabled
-            title="Invite — coming soon"
+            title="Room size"
           >
             <span className="room-ctrl-icon">👥</span>
             <span className="room-ctrl-label">{peers.length + 1}/4</span>
