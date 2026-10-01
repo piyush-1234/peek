@@ -36,7 +36,7 @@ export function registerHandlers(io, socket) {
   log.info('Connected', { socketId: socket.id, ip });
   createSession(socket.id);
 
-  socket.on('find_match', ({ region, mode = 'video' } = {}) => {
+  socket.on('find_match', ({ region, mode = 'video', interests = [] } = {}) => {
     const session = getSession(socket.id);
     if (!session) return;
 
@@ -59,6 +59,10 @@ export function registerHandlers(io, socket) {
       return;
     }
 
+    const cleanInterests = Array.isArray(interests)
+      ? interests.filter((i) => typeof i === 'string').slice(0, 3)
+      : [];
+
     if (session.peerId) {
       io.to(session.peerId).emit('peer_left', {});
       updateSession(session.peerId, { state: SessionState.CLOSED, peerId: null });
@@ -68,9 +72,11 @@ export function registerHandlers(io, socket) {
       state: SessionState.WAITING,
       region,
       mode,
+      interests: cleanInterests,
       peerId: null,
       initiator: false,
       matchedAt: null,
+      waitingSince: Date.now(),
     });
 
     // Queue key combines mode + region so video-only and text-only never mix
