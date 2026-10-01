@@ -25,7 +25,7 @@
     <link rel="preload" href="/fonts/poppins-500.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" as="image" href="/peek-logo-60.webp" type="image/webp" fetchpriority="high" />
 
-    <style>
+        <style>
       @font-face {
         font-family: 'Fredoka';
         font-style: normal;
@@ -62,26 +62,7 @@
         src: url('/fonts/poppins-700.woff2') format('woff2');
       }
 
-      /* CRITICAL CSS — inline, paints instantly */
-      html, body { margin: 0; padding: 0; background: #fdfaff; }
-      body { font-family: 'Poppins', system-ui, sans-serif; }
-      h1, h2, h3, h4, .peek-heading { font-family: 'Fredoka', system-ui, sans-serif; }
-
-      .boot-nav {
-        position: relative;
-        z-index: 5;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 20px 6vw;
-        gap: 20px;
-      }
-      .boot-nav img {
-        height: 64px;
-        width: auto;
-        object-fit: contain;
-      }
-            /* Critical above-the-fold styles — inline so nav paints without waiting for main CSS */
+      /* Critical CSS — paints instantly before React loads */
       html, body {
         margin: 0;
         padding: 0;
@@ -89,6 +70,9 @@
         font-family: 'Poppins', system-ui, sans-serif;
       }
       #root { min-height: 100vh; }
+      h1, h2, h3, h4, .peek-heading {
+        font-family: 'Fredoka', system-ui, sans-serif;
+      }
       .boot-nav {
         position: relative;
         z-index: 5;
