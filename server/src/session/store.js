@@ -24,6 +24,7 @@ export function createSession(socketId) {
     mode: null,
     interests: [],
     peerId: null,
+    roomId: null,
     initiator: false,
     createdAt: Date.now(),
     matchedAt: null,

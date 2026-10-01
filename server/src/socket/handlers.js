@@ -1,3 +1,9 @@
+import { assignToRoom } from '../rooms/matcher.js';
+import {
+  getRoom,
+  removeMember,
+  findRoomForSocket,
+} from '../rooms/store.js';
 import { checkMatchLimit, checkConnectionLimit } from '../rateLimit.js';
 import { writeReport } from '../reports/store.js';
 import { recordUnique } from '../stats.js';
@@ -133,6 +139,77 @@ export function registerHandlers(io, socket) {
     });
   });
 
+    // ---------- GROUP CHAT ----------
+  socket.on('find_group_match', ({ region, interests = [] } = {}) => {
+    const session = getSession(socket.id);
+    if (!session) return;
+
+    if (session.state !== SessionState.IDLE && session.state !== SessionState.MATCHED) return;
+    if (!region || !ALLOWED_REGIONS.has(region)) {
+      socket.emit('error', { code: 'BAD_REGION', message: 'Invalid region' });
+      return;
+    }
+
+    // Clean up any previous 1-on-1 or room
+    if (session.peerId) {
+      io.to(session.peerId).emit('peer_left', {});
+      updateSession(session.peerId, { state: SessionState.IDLE, peerId: null });
+    }
+    if (session.roomId) {
+      leaveRoom(io, socket);
+    }
+
+    const cleanInterests = Array.isArray(interests)
+      ? interests.filter((i) => typeof i === 'string').slice(0, 3)
+      : [];
+
+    const { room, isNew } = assignToRoom(socket, region, cleanInterests);
+
+    updateSession(socket.id, {
+      state: SessionState.MATCHED,
+      region,
+      mode: 'group',
+      interests: cleanInterests,
+      peerId: null,
+      roomId: room.id,
+      initiator: false,
+      matchedAt: Date.now(),
+      waitingSince: null,
+    });
+
+    const others = room.members.filter((id) => id !== socket.id);
+
+    if (isNew || others.length === 0) {
+      socket.emit('room_created', { roomId: room.id });
+    } else {
+      // New joiner: gets list of existing members (they will initiate to all)
+      socket.emit('room_joined', {
+        roomId: room.id,
+        members: others,
+      });
+
+      // Existing members: get notified about the new peer
+      for (const peerSocketId of others) {
+        io.to(peerSocketId).emit('peer_joined_room', {
+          roomId: room.id,
+          peerId: socket.id,
+        });
+      }
+    }
+  });
+
+  socket.on('signal_to_room_peer', ({ to, type, payload } = {}) => {
+    const s = getSession(socket.id);
+    if (!s || !s.roomId) return;
+    const room = getRoom(s.roomId);
+    if (!room) return;
+    if (!room.members.includes(to)) return;
+    io.to(to).emit('signal', { from: socket.id, type, payload });
+  });
+
+  socket.on('leave_group', () => {
+    leaveRoom(io, socket);
+  });
   // Text message relay — no storage, no history
     socket.on('text_message', ({ to, text, id } = {}) => {
     const s = getSession(socket.id);
@@ -206,6 +283,7 @@ export function registerHandlers(io, socket) {
 
   socket.on('disconnect', () => {
     log.info('Disconnected', { socketId: socket.id });
+    leaveRoom(io, socket);
     cleanup(io, socket, 'disconnect');
     deleteSession(socket.id);
   });
@@ -237,4 +315,27 @@ function cleanup(io, socket, reason) {
     initiator: false,
     matchedAt: null,
   });
+
+  function leaveRoom(io, socket) {
+    const s = getSession(socket.id);
+    if (!s || !s.roomId) return;
+
+    const roomId = s.roomId;
+    const updated = removeMember(roomId, socket.id);
+
+    if (updated) {
+      for (const memberId of updated.members) {
+        io.to(memberId).emit('peer_left_room', {
+          roomId,
+          peerId: socket.id,
+        });
+      }
+    }
+
+    updateSession(socket.id, {
+      roomId: null,
+      mode: null,
+      state: SessionState.IDLE,
+    });
+  }
 }
