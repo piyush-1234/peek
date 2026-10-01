@@ -146,6 +146,15 @@ export default function Landing({ onStart, online }) {
               </button>
             </div>
 
+            <button
+              className="cta cta-group"
+              disabled={!ageConfirmed}
+              onClick={() => handleStart('group')}
+            >
+              <span className="cta-icon">👥</span>
+              <span className="cta-text-label">Group Video (up to 4)</span>
+            </button>
+
             <p className="footnote">Every chat is moderated · Leave anytime with one tap</p>
           </div>
         </div>
