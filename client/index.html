@@ -9,7 +9,6 @@
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://peekmoment.com/" />
 
-    <!-- Open Graph (WhatsApp/Facebook/Twitter previews) -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Peek Moment — Meet Strangers, Make Memories" />
     <meta property="og:description" content="Safe random video chat with real people worldwide. No profiles, no history." />
@@ -22,13 +21,52 @@
 
     <link rel="icon" href="/peek-logo-64.webp" type="image/webp" />
 
+    <!-- Preload fonts used above the fold -->
+    <link rel="preload" href="/fonts/fredoka-600.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/poppins-500.woff2" as="font" type="font/woff2" crossorigin />
+
     <!-- Preload LCP image -->
     <link rel="preload" as="image" href="/peek-logo-128.webp" type="image/webp" fetchpriority="high" />
 
-    <!-- Preconnect fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      @font-face {
+        font-family: 'Fredoka';
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url('/fonts/fredoka-600.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/poppins-400.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+        src: url('/fonts/poppins-500.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url('/fonts/poppins-600.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url('/fonts/poppins-700.woff2') format('woff2');
+      }
+      html, body { font-family: 'Poppins', system-ui, sans-serif; }
+      h1, h2, h3, h4, .peek-heading { font-family: 'Fredoka', system-ui, sans-serif; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
