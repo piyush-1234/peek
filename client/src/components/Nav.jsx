@@ -10,10 +10,11 @@ export default function Nav({
   return (
     <nav className="nav">
       <img
-        src="/peek-logo-128.webp"
+        src="/peek-logo-60.webp"
         alt="Peek Moment — Home"
-        width="64"
-        height="64"
+        width="60"
+        height="60"
+        srcSet="/peek-logo-60.webp 1x, /peek-logo-128.webp 2x"
         className="nav-logo nav-logo-clickable"
         onClick={onLogoClick}
         title="Back to home"

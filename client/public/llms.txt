@@ -18,7 +18,7 @@ Peek Moment connects you with real people for spontaneous 1-on-1 video, audio, o
 
 ## Links
 
-- Homepage: https://peekmoment.com/
-- Terms: https://peekmoment.com/terms
-- Privacy: https://peekmoment.com/privacy
-- Contact: https://peekmoment.com/contact
+- [Homepage](https://peekmoment.com/)
+- [Terms of Service](https://peekmoment.com/terms)
+- [Privacy Policy](https://peekmoment.com/privacy)
+- [Contact](https://peekmoment.com/contact)
