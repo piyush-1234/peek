@@ -13,6 +13,7 @@ export function useTextChat() {
   const [peerId, setPeerId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [sharedInterests, setSharedInterests] = useState([]);
+  const [online, setOnline] = useState({ total: 0, waiting: 0, uniqueTotal: 0 });
 
   const peerIdRef = useRef(null);
   const mountedRef = useRef(true);
