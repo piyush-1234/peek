@@ -2,13 +2,17 @@
   "specVersion": "1.0",
   "entries": [
     {
-      "name": "Peek Moment",
-      "description": "Safe, moderated random video chat with strangers worldwide.",
+      "identifier": "peekmoment-video-chat",
+      "displayName": "Peek Moment",
+      "type": "application/web-application",
+      "description": "Safe, moderated random video chat with strangers worldwide. No profiles, no history.",
       "url": "https://peekmoment.com/",
       "logo": "https://peekmoment.com/peek-logo-256.webp",
       "contact": "https://peekmoment.com/contact",
       "terms": "https://peekmoment.com/terms",
       "privacy": "https://peekmoment.com/privacy",
+      "audience": "18+",
+      "language": "en",
       "features": [
         "Random video chat",
         "Audio-only mode",
@@ -17,8 +21,13 @@
         "In-chat games",
         "Report and moderation"
       ],
-      "audience": "18+",
-      "language": "en"
+      "representativeQueries": [
+        "random video chat with strangers",
+        "safe omegle alternative",
+        "talk to strangers online",
+        "anonymous video chat app",
+        "meet new people worldwide"
+      ]
     }
   ]
 }

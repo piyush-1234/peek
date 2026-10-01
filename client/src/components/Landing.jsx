@@ -161,7 +161,8 @@ export default function Landing({ onStart, online }) {
       </section>
 
       <footer className="footer">
-        <img src="/peek-logo-64.webp" alt="Peek Moment" width="48" height="48" className="footer-logo" loading="lazy" />        <p className="footer-line">Real Connections. Global Community.</p>
+        <img src="/peek-logo-60.webp" alt="Peek Moment" width="48" height="48" className="footer-logo" loading="lazy" />
+        <p className="footer-line">Real Connections. Global Community.</p>
         <div className="footer-links">
           <a href="/terms">Terms</a>
           <span>·</span>
