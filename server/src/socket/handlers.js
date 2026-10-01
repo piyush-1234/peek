@@ -120,8 +120,21 @@ export function registerHandlers(io, socket) {
     io.to(to).emit('video_state', { enabled: !!enabled });
   });
 
+    socket.on('game_event', ({ to, event, payload } = {}) => {
+    const s = getSession(socket.id);
+    if (!s || s.state !== SessionState.MATCHED) return;
+    if (s.peerId !== to) return;
+    if (!event || typeof event !== 'string') return;
+
+    io.to(to).emit('game_event', {
+      from: socket.id,
+      event,
+      payload: payload || {},
+    });
+  });
+
   // Text message relay — no storage, no history
-  socket.on('text_message', ({ to, text } = {}) => {
+    socket.on('text_message', ({ to, text, id } = {}) => {
     const s = getSession(socket.id);
     if (!s || s.state !== SessionState.MATCHED) return;
     if (s.peerId !== to) return;
@@ -129,11 +142,36 @@ export function registerHandlers(io, socket) {
     const trimmed = text.slice(0, 1000).trim();
     if (!trimmed) return;
 
+    const messageId = typeof id === 'string' ? id.slice(0, 40) : null;
+
     io.to(to).emit('text_message', {
       from: socket.id,
       text: trimmed,
       ts: Date.now(),
+      id: messageId,
     });
+
+    // Delivery acknowledgment back to sender
+    if (messageId) {
+      socket.emit('text_delivered', { id: messageId, ts: Date.now() });
+    }
+  });
+
+  socket.on('text_read', ({ to, ids } = {}) => {
+    const s = getSession(socket.id);
+    if (!s || s.state !== SessionState.MATCHED) return;
+    if (s.peerId !== to) return;
+    if (!Array.isArray(ids)) return;
+    const clean = ids.filter((i) => typeof i === 'string').slice(0, 200);
+    if (!clean.length) return;
+    io.to(to).emit('text_read', { ids: clean, ts: Date.now() });
+  });
+
+  socket.on('typing', ({ to, active } = {}) => {
+    const s = getSession(socket.id);
+    if (!s || s.state !== SessionState.MATCHED) return;
+    if (s.peerId !== to) return;
+    io.to(to).emit('typing', { from: socket.id, active: !!active });
   });
 
   socket.on('moderation_sample', async () => {});

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { VideoState } from '../hooks/useVideoChat.js';
+import { useGame } from '../hooks/useGame.js';
+import { socket } from '../lib/socket.js';
 import Icebreaker from './Icebreaker.jsx';
 import Nav from './Nav.jsx';
 import ChatSidebar from './ChatSidebar.jsx';
+import GamePanel from './GamePanel.jsx';
 
 export default function VideoRoom({ chat, region, interests = [] }) {
   const {
@@ -13,6 +16,7 @@ export default function VideoRoom({ chat, region, interests = [] }) {
     next, retry, leave, report, toggleVideo,
   } = chat;
   const [reportOpen, setReportOpen] = useState(false);
+  const game = useGame(peerId, socket.id);
 
   useEffect(() => {
     if (localVideoRef.current && localStreamRef.current) {
@@ -41,7 +45,7 @@ export default function VideoRoom({ chat, region, interests = [] }) {
       <Nav online={online} onLogoClick={leave} showStats />
 
       <div className="room-inner">
-        <div className="room-main">
+        <div className={`room-main ${game.active ? 'has-game' : ''}`}>
           <div className="room-videos">
             <video ref={remoteVideoRef} autoPlay playsInline className="room-remote" />
 
@@ -72,10 +76,11 @@ export default function VideoRoom({ chat, region, interests = [] }) {
 
             {isLive && sharedInterests?.length > 0 && (
               <div className="shared-interests">
-                🎯 You both like: {sharedInterests.map((i) => i).join(' · ')}
+                🎯 You both like: {sharedInterests.join(' · ')}
               </div>
             )}
-            {isLive && <Icebreaker visible />}
+
+            {isLive && !game.active && <Icebreaker visible />}
 
             {showOverlay && (
               <div className="room-overlay">
@@ -87,7 +92,7 @@ export default function VideoRoom({ chat, region, interests = [] }) {
                   </div>
                 )}
                 {state === VideoState.FAILED && (
-                  <button className="room-btn room-btn-primary" onClick={() => retry(region)}>
+                  <button className="room-btn room-btn-primary" onClick={() => retry(region, interests)}>
                     Try again
                   </button>
                 )}
@@ -111,9 +116,20 @@ export default function VideoRoom({ chat, region, interests = [] }) {
           </div>
 
           <ChatSidebar peerId={peerId} visible={isLive} />
+
+          {game.active && <GamePanel game={game} onClose={game.leave} />}
         </div>
 
         <div className="room-controls">
+          <button
+            className="room-ctrl room-ctrl-game"
+            onClick={() => game.active ? game.leave() : game.startGame('wyr')}
+            disabled={!isLive}
+          >
+            <span className="room-ctrl-icon">{game.active ? '✕' : '🎮'}</span>
+            <span className="room-ctrl-label">{game.active ? 'End game' : 'Play game'}</span>
+          </button>
+
           <button
             className={`room-ctrl ${videoEnabled ? 'room-ctrl-audio' : 'room-ctrl-video-on'}`}
             onClick={toggleVideo}

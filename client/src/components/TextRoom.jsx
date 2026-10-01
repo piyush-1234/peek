@@ -2,9 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { TextState } from '../hooks/useTextChat.js';
 import Nav from './Nav.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
+import ChatBubble from './ChatBubble.jsx';
+import { useChatMessages } from '../hooks/useChatMessages.js';
 
 export default function TextRoom({ chat, region, onLeave, interests = [] }) {
-  const { state, peerId, messages, online, sharedInterests, sendMessage, next, leave } = chat;
+  const { state, peerId, online, sharedInterests, next, leave } = chat;
+  const { messages, peerTyping, send, notifyTyping, markAllRead } = useChatMessages(peerId);
   const [input, setInput] = useState('');
   const [emojiOpen, setEmojiOpen] = useState(false);
   const bottomRef = useRef(null);
@@ -12,14 +15,23 @@ export default function TextRoom({ chat, region, onLeave, interests = [] }) {
 
   useEffect(() => {
     if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, peerTyping]);
+
+  useEffect(() => {
+    if (state === TextState.CONNECTED && peerId) markAllRead();
+  }, [state, peerId, markAllRead]);
 
   const handleSend = (e) => {
     e.preventDefault();
     if (!input.trim()) return;
-    sendMessage(input);
+    send(input);
     setInput('');
     setEmojiOpen(false);
+  };
+
+  const handleChange = (e) => {
+    setInput(e.target.value);
+    notifyTyping();
   };
 
   const handleEmoji = (emoji) => {
@@ -41,8 +53,29 @@ export default function TextRoom({ chat, region, onLeave, interests = [] }) {
 
           <div className="text-header">
             <div className="text-header-status">
-            {state === TextState.CONNECTED && (<><span className="text-status-dot" /><span>{sharedInterests?.length > 0 ? `You both like ${sharedInterests.join(' · ')}` : 'Connected to a stranger'}</span></>)}              {state === TextState.WAITING && (<><span className="text-status-dot waiting" /><span>Finding someone…</span></>)}
-              {state === TextState.DISCONNECTED && (<><span className="text-status-dot offline" /><span>They left the chat</span></>)}
+              {state === TextState.CONNECTED && (
+                <>
+                  <span className="text-status-dot" />
+                  <span>
+                    {sharedInterests?.length > 0
+                      ? `You both like ${sharedInterests.join(' · ')}`
+                      : 'Connected to a stranger'}
+                  </span>
+                  {peerTyping && <span className="typing-dot-row"><span /><span /><span /></span>}
+                </>
+              )}
+              {state === TextState.WAITING && (
+                <>
+                  <span className="text-status-dot waiting" />
+                  <span>Finding someone…</span>
+                </>
+              )}
+              {state === TextState.DISCONNECTED && (
+                <>
+                  <span className="text-status-dot offline" />
+                  <span>They left the chat</span>
+                </>
+              )}
             </div>
             <div className="text-header-actions">
               {state === TextState.CONNECTED && (
@@ -81,17 +114,14 @@ export default function TextRoom({ chat, region, onLeave, interests = [] }) {
                 {messages.length === 0 && (
                   <div className="text-hello">Say hi 👋 — this chat is private and disappears when you leave.</div>
                 )}
-                {messages.map((m, i) => {
-                  const isEmojiOnly = /^[\p{Emoji}\s]+$/u.test(m.text) && m.text.trim().length > 0;
-                  return (
-                    <div
-                      key={i}
-                      className={`text-bubble ${m.mine ? 'mine' : 'theirs'} ${isEmojiOnly ? 'emoji-only' : ''}`}
-                    >
-                      <div className="text-bubble-content">{m.text}</div>
-                    </div>
-                  );
-                })}
+                {messages.map((m, i) => (
+                  <ChatBubble key={m.id || i} message={m} variant="default" />
+                ))}
+                {peerTyping && (
+                  <div className="text-bubble theirs typing-bubble">
+                    <span className="typing-dots"><span /><span /><span /></span>
+                  </div>
+                )}
                 <div ref={bottomRef} />
               </div>
             )}
@@ -118,7 +148,7 @@ export default function TextRoom({ chat, region, onLeave, interests = [] }) {
                 className="text-input"
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={handleChange}
                 placeholder="Type a message…"
                 maxLength={1000}
                 autoFocus
