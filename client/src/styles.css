@@ -194,9 +194,9 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
   border: 1px solid transparent;
 }
 .pill-blue { background: #e0edff; color: #1d4ed8; border-color: #bfdbfe; }
-.pill-yellow { background: #fff4d1; color: #a16207; border-color: #fde68a; }
+.pill-yellow { background: #fef3c7; color: #78350f; border-color: #fcd34d; }
 .pill-purple { background: #ede9fe; color: #6d28d9; border-color: #ddd6fe; }
-.pill-orange { background: #ffe7d1; color: #c2410c; border-color: #fed7aa; }
+.pill-orange { background: #ffedd5; color: #7c2d12; border-color: #fdba74; }
 
 .stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
 .online-pill {

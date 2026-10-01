@@ -1,0 +1,24 @@
+# Peek Moment
+
+> Safe, moderated random video chat with strangers from around the world. No profiles, no history. Meet real people, chat, play games, share moments.
+
+## About
+
+Peek Moment connects you with real people for spontaneous 1-on-1 video, audio, or text conversations. Every chat is moderated, and you can leave anytime with one tap.
+
+## Features
+
+- Random video chat with strangers worldwide
+- Audio-only mode for privacy
+- Text-only mode
+- Region and language matching
+- Live 1-to-many video rooms
+- In-chat games and rewards
+- 18+ only, moderated environment
+
+## Links
+
+- Homepage: https://peekmoment.com/
+- Terms: https://peekmoment.com/terms
+- Privacy: https://peekmoment.com/privacy
+- Contact: https://peekmoment.com/contact

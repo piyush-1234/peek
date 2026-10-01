@@ -10,11 +10,14 @@ export default function Nav({
   return (
     <nav className="nav">
       <img
-        src="/peek-logo.png"
-        alt="Peek — Home"
+        src="/peek-logo-128.webp"
+        alt="Peek Moment — Home"
+        width="64"
+        height="64"
         className="nav-logo nav-logo-clickable"
         onClick={onLogoClick}
         title="Back to home"
+        fetchpriority="high"
       />
 
       <div className="nav-right">
