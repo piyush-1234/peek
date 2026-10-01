@@ -1,3 +1,4 @@
+import { WYR_PROMPTS } from '../lib/wyr-prompts.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { socket } from '../lib/socket.js';
 
@@ -329,7 +330,8 @@ export function useGroupChat() {
   }, []);
 
   // ---------- Group games ----------
-  const startGroupGame = useCallback((prompt) => {
+  const startGroupGame = useCallback(() => {
+    const prompt = WYR_PROMPTS[Math.floor(Math.random() * WYR_PROMPTS.length)];
     setGame({ active: true, round: 0, votes: {}, myVote: null, prompt });
     socket.emit('group_game_event', { event: 'start', payload: { prompt } });
   }, []);
@@ -340,7 +342,8 @@ export function useGroupChat() {
     socket.emit('group_game_event', { event: 'vote', payload: { choice } });
   }, [game.myVote]);
 
-  const nextGroupGame = useCallback((nextPrompt) => {
+  const nextGroupGame = useCallback(() => {
+    const nextPrompt = WYR_PROMPTS[Math.floor(Math.random() * WYR_PROMPTS.length)];
     setGame((g) => ({
       ...g,
       round: g.round + 1,

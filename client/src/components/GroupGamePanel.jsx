@@ -1,38 +1,9 @@
-import { WYR_PROMPTS } from '../lib/wyr-prompts.js';
+export default function GroupGamePanel({ chat }) {
+  const { game, peers, voteGroupGame, nextGroupGame } = chat;
 
-export default function GroupGamePanel({ chat, onClose }) {
-  const { game, peers, voteGroupGame, nextGroupGame, startGroupGame } = chat;
-
-  if (!game.active) {
-    return (
-      <aside className="game-panel">
-        <div className="game-header">
-          <div className="game-title">
-            <span className="game-icon">🎮</span>
-            <span>Would You Rather</span>
-          </div>
-          <button className="game-close" onClick={onClose} title="Close">✕</button>
-        </div>
-        <div className="game-body game-body-start">
-          <div className="game-start-emoji">🎲</div>
-          <div className="game-start-title">Ready to play?</div>
-          <div className="game-start-sub">
-            Everyone in the room votes. See how many agree.
-          </div>
-          <button
-            className="game-btn game-btn-next"
-            onClick={() => startGroupGame(WYR_PROMPTS[Math.floor(Math.random() * WYR_PROMPTS.length)])}
-          >
-            Start playing →
-          </button>
-        </div>
-      </aside>
-    );
-  }
+  if (!game.active || !game.prompt) return null;
 
   const prompt = game.prompt;
-  if (!prompt) return null;
-
   const votes = game.votes || {};
   const voteValues = Object.values(votes);
   const countA = voteValues.filter((v) => v === 'a').length;
@@ -43,11 +14,6 @@ export default function GroupGamePanel({ chat, onClose }) {
   const allVoted = totalVotes === totalPlayers;
   const myVote = game.myVote;
 
-  const handleNext = () => {
-    const nextPrompt = WYR_PROMPTS[Math.floor(Math.random() * WYR_PROMPTS.length)];
-    nextGroupGame(nextPrompt);
-  };
-
   return (
     <aside className="game-panel">
       <div className="game-header">
@@ -55,7 +21,6 @@ export default function GroupGamePanel({ chat, onClose }) {
           <span className="game-icon">🎮</span>
           <span>Would You Rather</span>
         </div>
-        <button className="game-close" onClick={onClose} title="Close game">✕</button>
       </div>
 
       <div className="game-body">
@@ -117,7 +82,7 @@ export default function GroupGamePanel({ chat, onClose }) {
       </div>
 
       <div className="game-footer">
-        <button className="game-btn game-btn-next" onClick={handleNext} disabled={!allVoted}>
+        <button className="game-btn game-btn-next" onClick={nextGroupGame} disabled={!allVoted}>
           Next question →
         </button>
       </div>
