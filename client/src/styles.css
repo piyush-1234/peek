@@ -2731,3 +2731,6 @@ button { font-family: 'Poppins', system-ui, sans-serif; cursor: pointer; }
   }
 }
 
+.game-panel .game-header {
+  justify-content: center;
+}
