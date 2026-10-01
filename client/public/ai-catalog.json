@@ -1,0 +1,19 @@
+{
+  "name": "Peek Moment",
+  "description": "Safe, moderated random video chat with strangers worldwide.",
+  "url": "https://peekmoment.com/",
+  "logo": "https://peekmoment.com/peek-logo-256.webp",
+  "contact": "https://peekmoment.com/contact",
+  "terms": "https://peekmoment.com/terms",
+  "privacy": "https://peekmoment.com/privacy",
+  "features": [
+    "Random video chat",
+    "Audio-only mode",
+    "Text-only mode",
+    "Region matching",
+    "In-chat games",
+    "Report and moderation"
+  ],
+  "audience": "18+",
+  "language": "en"
+}
