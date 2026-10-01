@@ -30,6 +30,9 @@ export function useGroupChat() {
   const [error, setError] = useState(null);
   const [online, setOnline] = useState({ total: 0, waiting: 0, uniqueTotal: 0 });
   const [videoEnabled, setVideoEnabled] = useState(true);
+  const [messages, setMessages] = useState([]);
+  const [someoneTyping, setSomeoneTyping] = useState(false);
+  const [game, setGame] = useState({ active: false, round: 0, votes: {}, myVote: null, prompt: null });
 
   const localStreamRef = useRef(null);
   const localVideoRef = useRef(null);
@@ -141,6 +144,47 @@ export function useGroupChat() {
       }
     };
 
+    const onGroupTextMessage = (msg) => {
+      setMessages((prev) => [...prev, { ...msg, mine: false }]);
+    };
+
+    const onGroupTyping = ({ from, active }) => {
+      // Track typing per peer in a set
+      setSomeoneTyping((prev) => {
+        if (active) return true;
+        // Just clear — simplest
+        return false;
+      });
+    };
+
+    const onGroupGameEvent = ({ from, event, payload }) => {
+      if (event === 'start') {
+        setGame({
+          active: true,
+          round: 0,
+          votes: {},
+          myVote: null,
+          prompt: payload.prompt || null,
+          seed: payload.seed || 0,
+        });
+      } else if (event === 'vote') {
+        setGame((g) => ({
+          ...g,
+          votes: { ...g.votes, [from]: payload.choice },
+        }));
+      } else if (event === 'next') {
+        setGame((g) => ({
+          ...g,
+          round: g.round + 1,
+          votes: {},
+          myVote: null,
+          prompt: payload.prompt || null,
+        }));
+      } else if (event === 'leave') {
+        setGame({ active: false, round: 0, votes: {}, myVote: null, prompt: null });
+      }
+    };
+
     const onRoomCreated = ({ roomId: rid }) => {
       setRoomId(rid);
       setState(GroupState.WAITING);
@@ -187,6 +231,9 @@ export function useGroupChat() {
     socket.on('peer_left_room', onPeerLeft);
     socket.on('online_count', onOnlineCount);
     socket.on('error', onError);
+    socket.on('group_text_message', onGroupTextMessage);
+    socket.on('group_typing', onGroupTyping);
+    socket.on('group_game_event', onGroupGameEvent);
 
     return () => {
       socket.off('signal', onSignal);
@@ -196,6 +243,10 @@ export function useGroupChat() {
       socket.off('peer_left_room', onPeerLeft);
       socket.off('online_count', onOnlineCount);
       socket.off('error', onError);
+      socket.off('group_text_message', onGroupTextMessage);
+      socket.off('group_typing', onGroupTyping);
+      socket.off('group_game_event', onGroupGameEvent);
+      
     };
   }, [createPeerConnection]);
 
@@ -262,6 +313,49 @@ export function useGroupChat() {
     socket.emit('report', { reason });
   }, []);
 
+    // ---------- Group text ----------
+  const sendGroupMessage = useCallback((text) => {
+    const trimmed = text.trim().slice(0, 1000);
+    if (!trimmed) return;
+    socket.emit('group_text_message', { text: trimmed });
+    setMessages((prev) => [
+      ...prev,
+      { from: 'me', text: trimmed, ts: Date.now(), mine: true, id: `me-${Date.now()}` },
+    ]);
+  }, []);
+
+  const notifyGroupTyping = useCallback(() => {
+    socket.emit('group_typing', { active: true });
+  }, []);
+
+  // ---------- Group games ----------
+  const startGroupGame = useCallback((prompt) => {
+    setGame({ active: true, round: 0, votes: {}, myVote: null, prompt });
+    socket.emit('group_game_event', { event: 'start', payload: { prompt } });
+  }, []);
+
+  const voteGroupGame = useCallback((choice) => {
+    if (game.myVote) return;
+    setGame((g) => ({ ...g, myVote: choice, votes: { ...g.votes, me: choice } }));
+    socket.emit('group_game_event', { event: 'vote', payload: { choice } });
+  }, [game.myVote]);
+
+  const nextGroupGame = useCallback((nextPrompt) => {
+    setGame((g) => ({
+      ...g,
+      round: g.round + 1,
+      votes: {},
+      myVote: null,
+      prompt: nextPrompt,
+    }));
+    socket.emit('group_game_event', { event: 'next', payload: { prompt: nextPrompt } });
+  }, []);
+
+  const leaveGroupGame = useCallback(() => {
+    setGame({ active: false, round: 0, votes: {}, myVote: null, prompt: null });
+    socket.emit('group_game_event', { event: 'leave' });
+  }, []);
+
   // ---------- Cleanup on unmount ----------
   useEffect(() => {
     return () => {
@@ -276,9 +370,14 @@ export function useGroupChat() {
     };
   }, []);
 
+  
   return {
     state, roomId, peers, error, online, videoEnabled,
     localVideoRef,
+    messages, someoneTyping,
+    game,
     begin, toggleVideo, leave, report,
+    sendGroupMessage, notifyGroupTyping,
+    startGroupGame, voteGroupGame, nextGroupGame, leaveGroupGame,
   };
 }
