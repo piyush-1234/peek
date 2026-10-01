@@ -19,14 +19,12 @@
     <meta name="twitter:description" content="Safe random video chat with real people worldwide." />
     <meta name="twitter:image" content="https://peekmoment.com/peek-logo-256.webp" />
 
-    <link rel="icon" href="/peek-logo-64.webp" type="image/webp" />
+    <link rel="icon" href="/peek-logo-60.webp" type="image/webp" />
 
-    <!-- Preload fonts used above the fold -->
     <link rel="preload" href="/fonts/fredoka-600.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/poppins-500.woff2" as="font" type="font/woff2" crossorigin />
-
-    <!-- Preload LCP image -->
     <link rel="preload" as="image" href="/peek-logo-60.webp" type="image/webp" fetchpriority="high" />
+
     <style>
       @font-face {
         font-family: 'Fredoka';
@@ -63,25 +61,16 @@
         font-display: swap;
         src: url('/fonts/poppins-700.woff2') format('woff2');
       }
-      html, body { font-family: 'Poppins', system-ui, sans-serif; }
-      h1, h2, h3, h4, .peek-heading { font-family: 'Fredoka', system-ui, sans-serif; }
-    </style>
-  </head>
-    <body>
-    <div id="root">
-      <div class="boot-splash">
-        <img
-          src="/peek-logo-128.webp"
-          alt="Peek Moment"
-          width="120"
-          height="120"
-          fetchpriority="high"
-          decoding="sync"
-        />
-        <div class="boot-spinner"></div>
-      </div>
-    </div>
-    <style>
+      html, body {
+        font-family: 'Poppins', system-ui, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      h1, h2, h3, h4, .peek-heading {
+        font-family: 'Fredoka', system-ui, sans-serif;
+      }
+
+      /* Boot splash — renders instantly, before React loads */
       .boot-splash {
         position: fixed;
         inset: 0;
@@ -116,6 +105,21 @@
         to { transform: rotate(360deg); }
       }
     </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="boot-splash">
+        <img
+          src="/peek-logo-128.webp"
+          alt="Peek Moment"
+          width="120"
+          height="120"
+          fetchpriority="high"
+          decoding="sync"
+        />
+        <div class="boot-spinner"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
