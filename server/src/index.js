@@ -1,3 +1,4 @@
+import { roomCount } from './rooms/store.js';
 import { getTotalUnique } from './stats.js';
 import http from 'http';
 import express from 'express';
@@ -22,6 +23,7 @@ app.get('/health', (_req, res) => {
     uptime: process.uptime(),
     sessions: countSessions(),
     queues: queueSizes(),
+    rooms: roomCount(),
     env: config.env,
   });
 });
