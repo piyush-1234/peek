@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /socket.io/
+Disallow: /health
+Disallow: /ice
+
+Sitemap: https://peekmoment.com/sitemap.xml
