@@ -23,6 +23,7 @@
 
     <link rel="preload" href="/fonts/fredoka-600.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/poppins-500.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" as="image" href="/peek-logo-60.webp" type="image/webp" fetchpriority="high" />
 
     <style>
       @font-face {
@@ -60,18 +61,43 @@
         font-display: swap;
         src: url('/fonts/poppins-700.woff2') format('woff2');
       }
-      html, body {
-        font-family: 'Poppins', system-ui, sans-serif;
-        margin: 0;
-        padding: 0;
+
+      /* CRITICAL CSS — inline, paints instantly */
+      html, body { margin: 0; padding: 0; background: #fdfaff; }
+      body { font-family: 'Poppins', system-ui, sans-serif; }
+      h1, h2, h3, h4, .peek-heading { font-family: 'Fredoka', system-ui, sans-serif; }
+
+      .boot-nav {
+        position: relative;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 6vw;
+        gap: 20px;
       }
-      h1, h2, h3, h4, .peek-heading {
-        font-family: 'Fredoka', system-ui, sans-serif;
+      .boot-nav img {
+        height: 64px;
+        width: auto;
+        object-fit: contain;
       }
     </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static nav — paints instantly as LCP, React replaces on mount -->
+      <nav class="boot-nav" aria-hidden="true">
+        <img
+          src="/peek-logo-128.webp"
+          alt="Peek Moment"
+          width="64"
+          height="64"
+          fetchpriority="high"
+          decoding="sync"
+          srcset="/peek-logo-60.webp 1x, /peek-logo-128.webp 2x"
+        />
+      </nav>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
