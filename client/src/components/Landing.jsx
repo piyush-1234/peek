@@ -11,18 +11,11 @@ const REGIONS = [
   { id: 'es:mx', label: '🇲🇽 Mexico', sub: 'Spanish speakers in Mexico' },
 ];
 
-const FEATURES = [
-  { emoji: '🌍', title: 'Random Global Chats', desc: 'Meet people from different regions, cultures and backgrounds — totally random!', color: 'blue' },
-  { emoji: '👥', title: '1 to Many Video Chat', desc: 'Chat one-to-one or with multiple strangers in the same room.', color: 'pink' },
-  { emoji: '🎁', title: 'Rewards System', desc: 'Send & receive virtual rewards when you vibe with someone.', color: 'yellow' },
-  { emoji: '🎮', title: 'Play While You Chat', desc: 'Play fun games together and break the ice instantly.', color: 'green' },
-  { emoji: '🍕', title: 'Order Food & Treat', desc: 'Order food for yourself or treat your new friend if you like them!', color: 'orange' },
-];
-
 export default function Landing({ onStart, online }) {
   const [region, setRegion] = useState('anywhere');
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [selectedInterests, setSelectedInterests] = useState([]);
+  const [mockupView, setMockupView] = useState(0); // 0=solo, 1=group, 2=game
 
   useEffect(() => {
     if (localStorage.getItem('peek_age_ok') === '1') setAgeConfirmed(true);
@@ -35,6 +28,12 @@ export default function Landing({ onStart, online }) {
     }
   }, []);
 
+  // Rotate mockup every 3.5s
+  useEffect(() => {
+    const t = setInterval(() => setMockupView((v) => (v + 1) % 3), 3500);
+    return () => clearInterval(t);
+  }, []);
+
   const handleAge = (checked) => {
     setAgeConfirmed(checked);
     if (checked) localStorage.setItem('peek_age_ok', '1');
@@ -44,13 +43,9 @@ export default function Landing({ onStart, online }) {
   const toggleInterest = (id) => {
     setSelectedInterests((prev) => {
       let next;
-      if (prev.includes(id)) {
-        next = prev.filter((i) => i !== id);
-      } else if (prev.length < MAX_INTERESTS) {
-        next = [...prev, id];
-      } else {
-        next = [...prev.slice(1), id];
-      }
+      if (prev.includes(id)) next = prev.filter((i) => i !== id);
+      else if (prev.length < MAX_INTERESTS) next = [...prev, id];
+      else next = [...prev.slice(1), id];
       localStorage.setItem('peek_interests', JSON.stringify(next));
       return next;
     });
@@ -78,143 +73,211 @@ export default function Landing({ onStart, online }) {
         regions={REGIONS}
       />
 
-      <main className="hero">
-        <div className="hero-left">
-          <p className="hero-eyebrow">Real People. Random Chats. Endless Fun.</p>
-          <h1 className="hero-title">
-            Meet <span className="grad-purple">Strangers</span>,<br />
-            Make <span className="grad-pink">Memories</span>!
-          </h1>
-          <p className="hero-sub">
-            Peek connects you with a real person, somewhere in the world, right now.
-            No profiles. No history. No pressure.
+      <main className="hero-compact">
+        {/* LEFT — actions */}
+        <div className="hero-actions">
+          <p className="hero-eyebrow-tight">
+            Real people · Random chats · Endless fun
           </p>
 
-          <div className="pills">
-            <span className="pill pill-blue">🌍 Global Random Chats</span>
-            <span className="pill pill-cyan">👥 1 to Many Chat</span>
-            <span className="pill pill-yellow">👑 Rewards & Gifting</span>
-            <span className="pill pill-purple">🎮 Games Together</span>
-            <span className="pill pill-orange">🍕 Order Food & Treat</span>
-          </div>
+          <h1 className="hero-title-tight">
+            Meet <span className="grad-purple">strangers</span>. Make <span className="grad-pink">memories</span>.
+          </h1>
 
-          <div className="interest-block">
-            <div className="interest-label">
-              What do you want to talk about? <span className="interest-optional">(optional)</span>
-            </div>
-            <div className="interest-chips">
+          <p className="hero-sub-tight">
+            Chat, play games, send rewards — no profiles, no history.
+          </p>
+
+          {/* Interests */}
+          <div className="interest-inline">
+            <span className="interest-inline-label">
+              Topics <span className="interest-optional">(optional)</span>
+            </span>
+            <div className="interest-chips-tight">
               {INTERESTS.map((i) => (
                 <button
                   key={i.id}
                   type="button"
-                  className={`interest-chip ${selectedInterests.includes(i.id) ? 'active' : ''}`}
+                  className={`interest-chip-tight ${selectedInterests.includes(i.id) ? 'active' : ''}`}
                   onClick={() => toggleInterest(i.id)}
                 >
                   {i.label}
                 </button>
               ))}
             </div>
-            {selectedInterests.length > 0 && (
-              <div className="interest-hint">
-                We&apos;ll try to match you with someone who likes the same things.
-              </div>
-            )}
           </div>
 
-          <div className="cta-block">
-            <label className="age-check">
-              <input
-                type="checkbox"
-                checked={ageConfirmed}
-                onChange={(e) => handleAge(e.target.checked)}
-              />
-              <span>I am 18 or older</span>
-            </label>
+          {/* Age + 4 CTAs */}
+          <label className="age-check-tight">
+            <input
+              type="checkbox"
+              checked={ageConfirmed}
+              onChange={(e) => handleAge(e.target.checked)}
+            />
+            <span>I am 18 or older</span>
+          </label>
 
-            <div className="cta-dual">
-              <button className="cta cta-video" disabled={!ageConfirmed} onClick={() => handleStart('video')}>
-                <span className="cta-icon">📹</span>
-                <span className="cta-text-label">Video</span>
-              </button>
-              <button className="cta cta-audio" disabled={!ageConfirmed} onClick={() => handleStart('audio')}>
-                <span className="cta-icon">🎙</span>
-                <span className="cta-text-label">Audio</span>
-              </button>
-              <button className="cta cta-text" disabled={!ageConfirmed} onClick={() => handleStart('text')}>
-                <span className="cta-icon">💬</span>
-                <span className="cta-text-label">Text</span>
-              </button>
-            </div>
+          <div className="cta-quad">
+            <button
+              className="cta-tile cta-tile-video"
+              disabled={!ageConfirmed}
+              onClick={() => handleStart('video')}
+            >
+              <span className="cta-tile-icon">📹</span>
+              <span className="cta-tile-text">
+                <span className="cta-tile-title">Video</span>
+                <span className="cta-tile-sub">1 on 1</span>
+              </span>
+            </button>
 
             <button
-              className="cta cta-group"
+              className="cta-tile cta-tile-audio"
+              disabled={!ageConfirmed}
+              onClick={() => handleStart('audio')}
+            >
+              <span className="cta-tile-icon">🎙</span>
+              <span className="cta-tile-text">
+                <span className="cta-tile-title">Audio</span>
+                <span className="cta-tile-sub">Voice only</span>
+              </span>
+            </button>
+
+            <button
+              className="cta-tile cta-tile-text"
+              disabled={!ageConfirmed}
+              onClick={() => handleStart('text')}
+            >
+              <span className="cta-tile-icon">💬</span>
+              <span className="cta-tile-text">
+                <span className="cta-tile-title">Text</span>
+                <span className="cta-tile-sub">Chat only</span>
+              </span>
+            </button>
+
+            <button
+              className="cta-tile cta-tile-group"
               disabled={!ageConfirmed}
               onClick={() => handleStart('group')}
             >
-              <span className="cta-icon">👥</span>
-              <span className="cta-text-label">Group Video (up to 4)</span>
+              <span className="cta-tile-icon">👥</span>
+              <span className="cta-tile-text">
+                <span className="cta-tile-title">Group</span>
+                <span className="cta-tile-sub">Up to 4</span>
+              </span>
             </button>
-
-            <p className="footnote">Every chat is moderated · Leave anytime with one tap</p>
           </div>
+
+          <p className="footnote-tight">
+            🛡️ Moderated · 18+ · Leave anytime
+          </p>
         </div>
 
-        <div className="hero-right">
-          <div className="mockup">
-            <div className="mockup-frame">
-              <div className="mockup-badge-live">● LIVE</div>
-              <div className="mockup-badge-viewers">👁 2.4K</div>
-              <div className="mockup-face"><span>😄</span></div>
-              <div className="mockup-grid">
-                <div className="mockup-tile">👦</div>
-                <div className="mockup-tile">👧</div>
-                <div className="mockup-tile">🧑</div>
-                <div className="mockup-tile">👩</div>
-              </div>
-              <div className="mockup-controls">
-                <button>🎙</button>
-                <button>📷</button>
-                <button>❤️</button>
-              </div>
+        {/* RIGHT — animated mockup */}
+        <div className="hero-mockup">
+          <div className="phone-frame">
+            <div className="phone-notch" />
+
+            {/* Top status */}
+            <div className="phone-top">
+              {mockupView === 0 && (
+                <>
+                  <div className="phone-pill phone-pill-live">● LIVE</div>
+                  <div className="phone-pill phone-pill-count">👁 2.4K</div>
+                </>
+              )}
+              {mockupView === 1 && (
+                <>
+                  <div className="phone-pill phone-pill-group">● GROUP · 4</div>
+                </>
+              )}
+              {mockupView === 2 && (
+                <>
+                  <div className="phone-pill phone-pill-game">🎮 GAME</div>
+                </>
+              )}
             </div>
-            <div className="float-badge fb-1">🎁 Send & Receive Rewards</div>
-            <div className="float-badge fb-2">🎮 Play Games Together</div>
-            <div className="float-badge fb-3">🍔 Order Food & Treat</div>
-            <div className="float-badge fb-4">💜 New Friends Await</div>
+
+            {/* View 0 — solo 1-on-1 */}
+            {mockupView === 0 && (
+              <div className="phone-body solo">
+                <div className="phone-main-face">
+                  <div className="face-emoji">👩</div>
+                  <div className="phone-speech">Hi! Where are you from? 🌍</div>
+                  <div className="phone-self">
+                    <span className="face-small">🧑</span>
+                    <span className="phone-self-label">You</span>
+                  </div>
+                </div>
+                <div className="phone-actions">
+                  <button>🎙</button>
+                  <button>📷</button>
+                  <button>❤️</button>
+                  <button>⏭</button>
+                </div>
+              </div>
+            )}
+
+            {/* View 1 — group 2x2 */}
+            {mockupView === 1 && (
+              <div className="phone-body group">
+                <div className="group-mini-grid">
+                  <div className="group-mini-tile g1"><span>👦</span></div>
+                  <div className="group-mini-tile g2"><span>👩</span></div>
+                  <div className="group-mini-tile g3"><span>🧑</span></div>
+                  <div className="group-mini-tile g4"><span>👧</span></div>
+                </div>
+                <div className="group-mini-chat">
+                  <div className="mini-msg mini-a">👦: Hey all!</div>
+                  <div className="mini-msg mini-b">👩: hii 👋</div>
+                  <div className="mini-msg mini-c">🧑: where you from?</div>
+                </div>
+              </div>
+            )}
+
+            {/* View 2 — game */}
+            {mockupView === 2 && (
+              <div className="phone-body game">
+                <div className="phone-game-header">🎮 Would You Rather</div>
+                <div className="phone-game-q">Would you rather…</div>
+                <div className="phone-game-opt picked">
+                  <span className="opt-tag">A</span>
+                  <span>Travel to the past</span>
+                  <span className="opt-count">2/4</span>
+                </div>
+                <div className="phone-game-opt">
+                  <span className="opt-tag">B</span>
+                  <span>Travel to the future</span>
+                  <span className="opt-count">1/4</span>
+                </div>
+                <div className="phone-game-votes">
+                  <span className="vote-chip v1">👦</span>
+                  <span className="vote-chip v2">👩</span>
+                  <span className="vote-chip v3">🧑</span>
+                  <span className="vote-chip v4 pending">…</span>
+                </div>
+                <div className="phone-game-bar">
+                  <div className="bar-a" />
+                  <div className="bar-b" />
+                </div>
+              </div>
+            )}
+
+            {/* Floating badges */}
+            <div className="float-tag ft-1">🎁 Send rewards</div>
+            <div className="float-tag ft-2">🎮 Play games</div>
+            <div className="float-tag ft-3">🍔 Order food</div>
           </div>
         </div>
       </main>
 
-      <div className="ribbon">Chat + Play + Reward + Food = Peek</div>
-
-      <section className="features">
-        <div className="features-head">
-          <p className="features-eyebrow">Why Peek?</p>
-          <h2 className="features-title">More Than Just A Video Chat App</h2>
-          <p className="features-sub">While other apps just connect you, Peek turns every conversation into an experience.</p>
-        </div>
-        <div className="features-grid">
-          {FEATURES.map((f) => (
-            <div key={f.title} className={`feature-card feature-${f.color}`}>
-              <div className="feature-emoji">{f.emoji}</div>
-              <h3 className="feature-title">{f.title}</h3>
-              <p className="feature-desc">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <footer className="footer">
-        <img src="/peek-logo-60.webp" alt="Peek Moment" width="48" height="48" className="footer-logo" loading="lazy" />
-        <p className="footer-line">Real Connections. Global Community.</p>
-        <div className="footer-links">
-          <a href="/terms">Terms</a>
-          <span>·</span>
-          <a href="/privacy">Privacy</a>
-          <span>·</span>
-          <a href="/contact">Contact</a>
-        </div>
-      </footer>
+      {/* Feature strip — thin, above fold on tall screens */}
+      <div className="feature-strip">
+        <span>🌍 Global random chats</span>
+        <span>👥 1 to many (4)</span>
+        <span>🎁 Rewards</span>
+        <span>🎮 Games</span>
+        <span>🍕 Food & treat</span>
+      </div>
     </div>
   );
 }
