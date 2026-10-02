@@ -118,52 +118,21 @@ export default function Landing({ onStart, online }) {
           </label>
 
           <div className="cta-quad">
-            <button
-              className="cta-tile cta-tile-video"
-              disabled={!ageConfirmed}
-              onClick={() => handleStart('video')}
-            >
-              <span className="cta-tile-icon">📹</span>
-              <span className="cta-tile-text">
-                <span className="cta-tile-title">Video</span>
-                <span className="cta-tile-sub">1 on 1</span>
-              </span>
+            <button className="cta-pill cta-pill-video" disabled={!ageConfirmed} onClick={() => handleStart('video')}>
+              <span className="cta-pill-icon">📹</span>
+              <span className="cta-pill-label">Video</span>
             </button>
-
-            <button
-              className="cta-tile cta-tile-audio"
-              disabled={!ageConfirmed}
-              onClick={() => handleStart('audio')}
-            >
-              <span className="cta-tile-icon">🎙</span>
-              <span className="cta-tile-text">
-                <span className="cta-tile-title">Audio</span>
-                <span className="cta-tile-sub">Voice only</span>
-              </span>
+            <button className="cta-pill cta-pill-audio" disabled={!ageConfirmed} onClick={() => handleStart('audio')}>
+              <span className="cta-pill-icon">🎙</span>
+              <span className="cta-pill-label">Audio</span>
             </button>
-
-            <button
-              className="cta-tile cta-tile-text"
-              disabled={!ageConfirmed}
-              onClick={() => handleStart('text')}
-            >
-              <span className="cta-tile-icon">💬</span>
-              <span className="cta-tile-text">
-                <span className="cta-tile-title">Text</span>
-                <span className="cta-tile-sub">Chat only</span>
-              </span>
+            <button className="cta-pill cta-pill-text" disabled={!ageConfirmed} onClick={() => handleStart('text')}>
+              <span className="cta-pill-icon">💬</span>
+              <span className="cta-pill-label">Text</span>
             </button>
-
-            <button
-              className="cta-tile cta-tile-group"
-              disabled={!ageConfirmed}
-              onClick={() => handleStart('group')}
-            >
-              <span className="cta-tile-icon">👥</span>
-              <span className="cta-tile-text">
-                <span className="cta-tile-title">Group</span>
-                <span className="cta-tile-sub">Up to 4</span>
-              </span>
+            <button className="cta-pill cta-pill-group" disabled={!ageConfirmed} onClick={() => handleStart('group')}>
+              <span className="cta-pill-icon">👥</span>
+              <span className="cta-pill-label">Group</span>
             </button>
           </div>
 
@@ -270,7 +239,6 @@ export default function Landing({ onStart, online }) {
         </div>
       </main>
 
-      {/* Feature strip — thin, above fold on tall screens */}
       <div className="feature-strip">
         <span>🌍 Global random chats</span>
         <span>👥 1 to many (4)</span>
@@ -278,6 +246,18 @@ export default function Landing({ onStart, online }) {
         <span>🎮 Games</span>
         <span>🍕 Food & treat</span>
       </div>
+
+      <footer className="footer">
+        <img src="/peek-logo-60.webp" alt="Peek Moment" width="48" height="48" className="footer-logo" loading="lazy" />
+        <p className="footer-line">Real Connections. Global Community.</p>
+        <div className="footer-links">
+          <a href="/terms">Terms</a>
+          <span>·</span>
+          <a href="/privacy">Privacy</a>
+          <span>·</span>
+          <a href="/contact">Contact</a>
+        </div>
+      </footer>
     </div>
   );
 }
