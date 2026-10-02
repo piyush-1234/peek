@@ -1,11 +1,9 @@
-import Nav from '../components/Nav.jsx';
-import Footer from '../components/Footer.jsx';
-import { Link, navigate } from '../lib/router.jsx';
+// ... (imports remain the same)
 
-export default function Privacy({ online }) {
+export default function Privacy() {
   return (
     <div className="legal-page">
-      <Nav online={online} onLogoClick={() => navigate('/')} showStats />
+      <Nav onLogoClick={() => { window.location.href = '/'; }} showStats={false} />
 
       <article className="legal-content">
         <h1>Privacy Policy</h1>
@@ -25,29 +23,29 @@ export default function Privacy({ online }) {
           <li><strong>We do not sell</strong> any data to third parties</li>
         </ul>
 
-        <h2>2. What We Do Collect</h2>
-        <p>To operate the Service, we collect:</p>
+        <h2>2. What We Do Collect (Itemised)</h2>
+        <p>To operate the Service, we collect the following categories of personal data:</p>
         <ul>
-          <li><strong>IP address</strong> — for rate limiting, abuse prevention, and safety logging</li>
-          <li><strong>User agent / browser info</strong> — for compatibility and bot filtering</li>
-          <li><strong>Anonymous session ID</strong> — generated per session, deleted when you leave</li>
-          <li><strong>Report logs</strong> — if you report another user, we log the timestamp, reason, and session IDs involved</li>
-          <li><strong>Aggregate counts</strong> — total unique visitors, online counts (no personal data)</li>
+          <li><strong>IP address:</strong> For rate limiting, abuse prevention, and safety logging.</li>
+          <li><strong>User agent / browser info:</strong> For compatibility checks and bot filtering.</li>
+          <li><strong>Anonymous session ID:</strong> Generated per session, deleted when you leave.</li>
+          <li><strong>Report logs:</strong> If you report another user, we log the timestamp, reason, and session IDs involved.</li>
+          <li><strong>Aggregate counts:</strong> Total unique visitors, online counts (no personal data).</li>
         </ul>
 
         <h2>3. How We Use Your Data</h2>
         <ul>
-          <li>To match you with other users</li>
-          <li>To prevent abuse, spam, and rate-limit misuse</li>
-          <li>To improve the Service (aggregate analytics only)</li>
-          <li>To comply with legal obligations</li>
+          <li>To match you with other users.</li>
+          <li>To prevent abuse, spam, and rate-limit misuse.</li>
+          <li>To improve the Service (aggregate analytics only).</li>
+          <li>To comply with legal obligations.</li>
         </ul>
 
         <h2>4. Data Retention</h2>
         <ul>
-          <li><strong>Session data:</strong> Deleted immediately when you close the tab</li>
-          <li><strong>Report logs:</strong> Retained for 90 days for safety review, then deleted</li>
-          <li><strong>Aggregate counters:</strong> Retained indefinitely (anonymised)</li>
+          <li><strong>Session data:</strong> Deleted immediately when you close the tab.</li>
+          <li><strong>Report logs:</strong> Retained for 90 days for safety review, then deleted.</li>
+          <li><strong>Aggregate counters:</strong> Retained indefinitely (anonymised).</li>
         </ul>
 
         <h2>5. Third-Party Services</h2>
@@ -71,17 +69,19 @@ export default function Privacy({ online }) {
         </ul>
         <p>We do not use tracking cookies or third-party analytics cookies.</p>
 
-        <h2>7. Your Rights (GDPR / DPDP Act)</h2>
-        <p>You have the right to:</p>
+        <h2>7. Your Rights (DPDP Act)</h2>
+        <p>Under the Digital Personal Data Protection Act, 2023, you have the right to:</p>
         <ul>
-          <li>Access your data — though we retain almost none</li>
-          <li>Request deletion of report logs related to you</li>
-          <li>Object to data processing</li>
-          <li>Lodge a complaint with a supervisory authority</li>
+          <li><strong>Access</strong> your personal data.</li>
+          <li><strong>Correct</strong> inaccurate data.</li>
+          <li><strong>Erase</strong> your data.</li>
+          <li><strong>Withdraw consent</strong> at any time.</li>
+          <li><strong>Nominate</strong> another person to exercise these rights on your behalf.</li>
+          <li><strong>Lodge a complaint</strong> with the Data Protection Board of India.</li>
         </ul>
         <p>
           Since we don't store identifiable user data, most requests can only relate to IP-based
-          logs. Email <a href="mailto:hello@peekmoment.com">hello@peekmoment.com</a> for any request.
+          logs. To exercise any of these rights, email <a href="mailto:hello@peekmoment.com">hello@peekmoment.com</a>. We will respond within 90 days.
         </p>
 
         <h2>8. Children's Privacy</h2>
@@ -92,9 +92,10 @@ export default function Privacy({ online }) {
 
         <h2>9. Security</h2>
         <ul>
-          <li>All connections are encrypted with HTTPS / WSS</li>
-          <li>Video/audio uses WebRTC's built-in DTLS-SRTP encryption</li>
-          <li>We do not store passwords (no accounts exist)</li>
+          <li>All connections are encrypted with HTTPS / WSS.</li>
+          <li>Video/audio uses WebRTC's built-in DTLS-SRTP encryption.</li>
+          <li>We do not store passwords (no accounts exist).</li>
+          <li>Access to server logs is restricted to the system administrator.</li>
         </ul>
 
         <h2>10. International Transfers</h2>
@@ -113,7 +114,7 @@ export default function Privacy({ online }) {
           Data protection contact: <a href="mailto:hello@peekmoment.com">hello@peekmoment.com</a>
         </p>
       </article>
-      <Footer />
+      {/* <Footer /> is already present from your shared component setup */}
     </div>
   );
 }

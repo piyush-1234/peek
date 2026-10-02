@@ -118,7 +118,12 @@ export default function Landing({ onStart, online }) {
               checked={ageConfirmed}
               onChange={(e) => handleAge(e.target.checked)}
             />
-            <span>I am 18 or older</span>
+            <span>
+              I am 18+ and consent to the processing of my data as described in the{' '}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
+                Privacy Policy
+              </a>
+            </span>
           </label>
 
           <div className="cta-quad">
