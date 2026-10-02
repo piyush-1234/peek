@@ -6,7 +6,7 @@ import HowToUseSection from './HowToUseSection.jsx';
 import CompareSection from './CompareSection.jsx';
 import CommunitySection from './CommunitySection.jsx';
 import FAQSection from './FAQSection.jsx';
-import { Link } from '../lib/router.js';
+import { Link } from '../lib/router.jsx';
 import { INTERESTS, MAX_INTERESTS } from '../lib/interests.js';
 
 const REGIONS = [
