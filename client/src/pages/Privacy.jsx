@@ -1,10 +1,11 @@
 import Nav from '../components/Nav.jsx';
-import { Link } from '../lib/router.jsx';
+import Footer from '../components/Footer.jsx';
+import { Link, navigate } from '../lib/router.jsx';
 
-export default function Privacy() {
+export default function Privacy({ online }) {
   return (
     <div className="legal-page">
-      <Nav onLogoClick={() => { window.location.href = '/'; }} showStats={false} />
+      <Nav online={online} onLogoClick={() => navigate('/')} showStats />
 
       <article className="legal-content">
         <h1>Privacy Policy</h1>
@@ -112,6 +113,7 @@ export default function Privacy() {
           Data protection contact: <a href="mailto:privacy@peekmoment.com">privacy@peekmoment.com</a>
         </p>
       </article>
+      <Footer />
     </div>
   );
 }
