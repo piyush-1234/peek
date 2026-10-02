@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
 import Nav from './Nav.jsx';
+import FeatureCards from './FeatureCards.jsx';
+import AboutSection from './AboutSection.jsx';
+import HowToUseSection from './HowToUseSection.jsx';
+import CompareSection from './CompareSection.jsx';
+import CommunitySection from './CommunitySection.jsx';
+import FAQSection from './FAQSection.jsx';
+import { Link } from '../lib/router.js';
 import { INTERESTS, MAX_INTERESTS } from '../lib/interests.js';
 
 const REGIONS = [
@@ -15,7 +22,7 @@ export default function Landing({ onStart, online }) {
   const [region, setRegion] = useState('anywhere');
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [selectedInterests, setSelectedInterests] = useState([]);
-  const [mockupView, setMockupView] = useState(0); // 0=solo, 1=group, 2=game
+  const [mockupView, setMockupView] = useState(0);
 
   useEffect(() => {
     if (localStorage.getItem('peek_age_ok') === '1') setAgeConfirmed(true);
@@ -28,7 +35,6 @@ export default function Landing({ onStart, online }) {
     }
   }, []);
 
-  // Rotate mockup every 3.5s
   useEffect(() => {
     const t = setInterval(() => setMockupView((v) => (v + 1) % 3), 3500);
     return () => clearInterval(t);
@@ -65,7 +71,7 @@ export default function Landing({ onStart, online }) {
 
       <Nav
         online={online}
-        onLogoClick={() => {}}
+        onLogoClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         showStats
         showRegionSelector
         region={region}
@@ -74,7 +80,6 @@ export default function Landing({ onStart, online }) {
       />
 
       <main className="hero-compact">
-        {/* LEFT — actions */}
         <div className="hero-actions">
           <p className="hero-eyebrow-tight">
             Real people · Random chats · Endless fun
@@ -85,10 +90,9 @@ export default function Landing({ onStart, online }) {
           </h1>
 
           <p className="hero-sub-tight">
-            Chat, play games, send rewards — no profiles, no history.
+            Chat, play games, send rewards — no profiles, no history. Just real people.
           </p>
 
-          {/* Interests */}
           <div className="interest-inline">
             <span className="interest-inline-label">
               Topics <span className="interest-optional">(optional)</span>
@@ -107,7 +111,6 @@ export default function Landing({ onStart, online }) {
             </div>
           </div>
 
-          {/* Age + 4 CTAs */}
           <label className="age-check-tight">
             <input
               type="checkbox"
@@ -137,16 +140,13 @@ export default function Landing({ onStart, online }) {
           </div>
 
           <p className="footnote-tight">
-            🛡️ Moderated · 18+ · Leave anytime
+            🛡️ Moderated · 18+ only · Leave anytime
           </p>
         </div>
 
-        {/* RIGHT — animated mockup */}
         <div className="hero-mockup">
           <div className="phone-frame">
             <div className="phone-notch" />
-
-            {/* Top status */}
             <div className="phone-top">
               {mockupView === 0 && (
                 <>
@@ -155,18 +155,13 @@ export default function Landing({ onStart, online }) {
                 </>
               )}
               {mockupView === 1 && (
-                <>
-                  <div className="phone-pill phone-pill-group">● GROUP · 4</div>
-                </>
+                <div className="phone-pill phone-pill-group">● GROUP · 4</div>
               )}
               {mockupView === 2 && (
-                <>
-                  <div className="phone-pill phone-pill-game">🎮 GAME</div>
-                </>
+                <div className="phone-pill phone-pill-game">🎮 GAME</div>
               )}
             </div>
 
-            {/* View 0 — solo 1-on-1 */}
             {mockupView === 0 && (
               <div className="phone-body solo">
                 <div className="phone-main-face">
@@ -186,7 +181,6 @@ export default function Landing({ onStart, online }) {
               </div>
             )}
 
-            {/* View 1 — group 2x2 */}
             {mockupView === 1 && (
               <div className="phone-body group">
                 <div className="group-mini-grid">
@@ -203,7 +197,6 @@ export default function Landing({ onStart, online }) {
               </div>
             )}
 
-            {/* View 2 — game */}
             {mockupView === 2 && (
               <div className="phone-body game">
                 <div className="phone-game-header">🎮 Would You Rather</div>
@@ -231,7 +224,6 @@ export default function Landing({ onStart, online }) {
               </div>
             )}
 
-            {/* Floating badges */}
             <div className="float-tag ft-1">🎁 Send rewards</div>
             <div className="float-tag ft-2">🎮 Play games</div>
             <div className="float-tag ft-3">🍔 Order food</div>
@@ -239,24 +231,47 @@ export default function Landing({ onStart, online }) {
         </div>
       </main>
 
-      <div className="feature-strip">
-        <span>🌍 Global random chats</span>
-        <span>👥 1 to many (4)</span>
-        <span>🎁 Rewards</span>
-        <span>🎮 Games</span>
-        <span>🍕 Food & treat</span>
-      </div>
+      <FeatureCards />
+      <AboutSection />
+      <HowToUseSection />
+      <CompareSection />
+      <FAQSection />
+      <CommunitySection />
 
       <footer className="footer">
         <img src="/peek-logo-60.webp" alt="Peek Moment" width="48" height="48" className="footer-logo" loading="lazy" />
         <p className="footer-line">Real Connections. Global Community.</p>
-        <div className="footer-links">
-          <a href="/terms">Terms</a>
+
+        <nav className="footer-nav">
+          <Link href="/#about">About</Link>
           <span>·</span>
-          <a href="/privacy">Privacy</a>
+          <Link href="/#features">Features</Link>
           <span>·</span>
-          <a href="/contact">Contact</a>
-        </div>
+          <Link href="/#how-to-use">How to Use</Link>
+          <span>·</span>
+          <Link href="/#compare">Compare</Link>
+          <span>·</span>
+          <Link href="/#faq">FAQ</Link>
+          <span>·</span>
+          <Link href="/#community">Community</Link>
+        </nav>
+
+        <nav className="footer-nav footer-nav-legal">
+          <Link href="/terms">Terms & Conditions</Link>
+          <span>·</span>
+          <Link href="/privacy">Privacy Policy</Link>
+          <span>·</span>
+          <Link href="/disclaimer">Disclaimer</Link>
+          <span>·</span>
+          <Link href="/community-guidelines">Community Guidelines</Link>
+        </nav>
+
+        <p className="footer-copyright">
+          © {new Date().getFullYear()} Peek Moment. All rights reserved.
+        </p>
+        <p className="footer-note">
+          Peek Moment is an independent platform. Not affiliated with Omegle, OmeTV, or Chatroulette.
+        </p>
       </footer>
     </div>
   );
