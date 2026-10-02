@@ -81,7 +81,7 @@ export default function Privacy({ online }) {
         </ul>
         <p>
           Since we don't store identifiable user data, most requests can only relate to IP-based
-          logs. Email <a href="mailto:privacy@peekmoment.com">privacy@peekmoment.com</a> for any request.
+          logs. Email <a href="mailto:hello@peekmoment.com">hello@peekmoment.com</a> for any request.
         </p>
 
         <h2>8. Children's Privacy</h2>
@@ -110,7 +110,7 @@ export default function Privacy({ online }) {
 
         <h2>12. Contact</h2>
         <p>
-          Data protection contact: <a href="mailto:privacy@peekmoment.com">privacy@peekmoment.com</a>
+          Data protection contact: <a href="mailto:hello@peekmoment.com">hello@peekmoment.com</a>
         </p>
       </article>
       <Footer />

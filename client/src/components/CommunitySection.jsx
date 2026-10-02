@@ -1,10 +1,40 @@
 const COMMUNITIES = [
-  { name: 'Discord', icon: '💬', desc: 'Live chat, events, and feature drops', url: 'https://discord.gg/peekmoment' },
-  { name: 'Reddit', icon: '🔴', desc: 'r/peekmoment — stories & feedback', url: 'https://reddit.com/r/peekmoment' },
-  { name: 'Telegram', icon: '✈️', desc: 'Quick updates, low-noise channel', url: 'https://t.me/peekmoment' },
-  { name: 'WhatsApp', icon: '🟢', desc: 'Community group for Indian users', url: 'https://chat.whatsapp.com/peekmoment' },
-  { name: 'Twitter / X', icon: '🐦', desc: 'Product updates & announcements', url: 'https://twitter.com/peekmoment' },
-  { name: 'Instagram', icon: '📸', desc: 'Behind the scenes & fun moments', url: 'https://instagram.com/peekmoment' },
+  {
+    name: 'Discord',
+    icon: '💬',
+    desc: 'Live chat, events, and feature drops',
+    url: 'https://discord.gg/daQYRgRcV',
+  },
+  {
+    name: 'Reddit',
+    icon: '🔴',
+    desc: 'Stories, feedback, and AMAs',
+    url: 'https://www.reddit.com/user/itspeekmoment/',
+  },
+  {
+    name: 'Telegram',
+    icon: '✈️',
+    desc: 'Quick updates, low-noise channel',
+    url: 'https://t.me/peekmomentlive',
+  },
+  {
+    name: 'WhatsApp',
+    icon: '🟢',
+    desc: 'Community group for daily chats',
+    url: 'https://chat.whatsapp.com/JRqxZqi6IQJEkW5ntYSKRs',
+  },
+  {
+    name: 'Twitter / X',
+    icon: '🐦',
+    desc: 'Announcements and product updates',
+    url: 'https://twitter.com/peekmoment',
+  },
+  {
+    name: 'Instagram',
+    icon: '📸',
+    desc: 'Behind the scenes and fun moments',
+    url: 'https://instagram.com/peekandtalk',
+  },
 ];
 
 export default function CommunitySection() {
