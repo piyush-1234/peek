@@ -1,9 +1,11 @@
 import Nav from '../components/Nav.jsx';
+import Footer from '../components/Footer.jsx';
+import { navigate } from '../lib/router.jsx';
 
-export default function Disclaimer() {
+export default function Disclaimer({ online }) {
   return (
     <div className="legal-page">
-      <Nav onLogoClick={() => { window.location.href = '/'; }} showStats={false} />
+      <Nav online={online} onLogoClick={() => navigate('/')} showStats />
 
       <article className="legal-content">
         <h1>Disclaimer</h1>
@@ -72,6 +74,7 @@ export default function Disclaimer() {
           Questions? Email <a href="mailto:hello@peekmoment.com">hello@peekmoment.com</a>.
         </p>
       </article>
+      <Footer />
     </div>
   );
 }

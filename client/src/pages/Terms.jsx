@@ -1,10 +1,11 @@
 import Nav from '../components/Nav.jsx';
-import { Link } from '../lib/router.jsx';
+import Footer from '../components/Footer.jsx';
+import { Link, navigate } from '../lib/router.jsx';
 
-export default function Terms() {
+export default function Terms({ online }) {
   return (
     <div className="legal-page">
-      <Nav onLogoClick={() => { window.location.href = '/'; }} showStats={false} />
+      <Nav online={online} onLogoClick={() => navigate('/')} showStats />
 
       <article className="legal-content">
         <h1>Terms & Conditions</h1>
@@ -126,6 +127,8 @@ export default function Terms() {
           <a href="mailto:legal@peekmoment.com">legal@peekmoment.com</a>.
         </p>
       </article>
+
+      <Footer />
     </div>
   );
 }

@@ -34,16 +34,16 @@ export default function App() {
 
   // Legal pages first — no chat hooks needed
   if (pathname === '/terms') {
-    return <Suspense fallback={<Loading />}><Terms /></Suspense>;
+    return <Suspense fallback={<Loading />}><Terms online={videoChat.online} /></Suspense>;
   }
   if (pathname === '/privacy') {
-    return <Suspense fallback={<Loading />}><Privacy /></Suspense>;
+    return <Suspense fallback={<Loading />}><Privacy online={videoChat.online} /></Suspense>;
   }
   if (pathname === '/disclaimer') {
-    return <Suspense fallback={<Loading />}><Disclaimer /></Suspense>;
+    return <Suspense fallback={<Loading />}><Disclaimer online={videoChat.online} /></Suspense>;
   }
   if (pathname === '/community-guidelines') {
-    return <Suspense fallback={<Loading />}><CommunityGuidelines /></Suspense>;
+    return <Suspense fallback={<Loading />}><CommunityGuidelines online={videoChat.online} /></Suspense>;
   }
 
   if (mode === null) {
