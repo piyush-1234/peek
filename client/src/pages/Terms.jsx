@@ -1,5 +1,5 @@
 import Nav from '../components/Nav.jsx';
-import { Link } from '../lib/router.js';
+import { Link } from '../lib/router.jsx';
 
 export default function Terms() {
   return (

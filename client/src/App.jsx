@@ -2,7 +2,7 @@ import { useState, lazy, Suspense, useEffect } from 'react';
 import { useVideoChat, VideoState } from './hooks/useVideoChat.js';
 import { useTextChat, TextState } from './hooks/useTextChat.js';
 import { useGroupChat, GroupState } from './hooks/useGroupChat.js';
-import { usePathname } from './lib/router.js';
+import { usePathname } from './lib/router.jsx';
 import Landing from './components/Landing.jsx';
 
 const SelfPreview = lazy(() => import('./components/SelfPreview.jsx'));

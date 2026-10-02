@@ -1,4 +1,4 @@
-import { Link } from '../lib/router.js';
+import { Link } from '../lib/router.jsx';
 
 export default function AboutSection() {
   return (
