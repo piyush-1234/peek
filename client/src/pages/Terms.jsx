@@ -124,7 +124,7 @@ export default function Terms({ online }) {
         <h2>15. Contact</h2>
         <p>
           For questions about these Terms, contact us at{' '}
-          <a href="mailto:legal@peekmoment.com">legal@peekmoment.com</a>.
+          <a href="mailto:hello@peekmoment.com">hello@peekmoment.com</a>.
         </p>
       </article>
 

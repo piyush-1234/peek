@@ -78,7 +78,7 @@ export default function CommunityGuidelines({ online }) {
 
         <h2>Contact</h2>
         <p>
-          Report issues or ask questions at <a href="mailto:community@peekmoment.com">community@peekmoment.com</a>.
+          Report issues or ask questions at <a href="mailto:hello@peekmoment.com">hello@peekmoment.com</a>.
         </p>
       </article>
       <Footer />
