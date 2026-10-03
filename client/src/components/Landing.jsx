@@ -1,3 +1,4 @@
+import OnboardingChecklist from './OnboardingChecklist.jsx';
 import Footer from './Footer.jsx';
 import { useEffect, useState } from 'react';
 import Nav from './Nav.jsx';
@@ -245,6 +246,7 @@ export default function Landing({ onStart, online }) {
       <CommunitySection />
 
       <Footer />
+      <OnboardingChecklist />
     </div>
   );
 }
