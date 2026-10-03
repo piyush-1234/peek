@@ -78,7 +78,7 @@ export default function VideoRoom({ chat, region, interests = [] }) {
               </div>
             )}
 
-            {isLive && !game.active && <Icebreaker visible />}
+            {isLive && !gameOpen && <Icebreaker visible />}
 
             {showOverlay && (
               <div className="room-overlay">
@@ -115,7 +115,13 @@ export default function VideoRoom({ chat, region, interests = [] }) {
 
           <ChatSidebar peerId={peerId} visible={isLive} />
 
-          {gameOpen && <GamePanel peerId={peerId} visible={isLive} onClose={() => setGameOpen(false)} />}
+          {gameOpen && isLive && (
+            <GamePanel
+              peerId={peerId}
+              visible={isLive}
+              onClose={() => setGameOpen(false)}
+            />
+          )}
         </div>
 
         <div className="room-controls">
