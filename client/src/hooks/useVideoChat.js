@@ -263,7 +263,12 @@ export function useVideoChat() {
           socket.emit('signal', { to: from, type: 'answer', payload: answer });
         } else if (type === 'answer') {
           if (!initiatorRef.current) return;
-          if (pc.signalingState !== 'have-local-offer') return;
+          // Guard against stale answers from previous peer connections
+          if (from !== peerIdRef.current) return;
+          if (pc.signalingState !== 'have-local-offer') {
+            // Not expecting an answer — ignore quietly
+            return;
+          }
           await pc.setRemoteDescription(new RTCSessionDescription(payload));
           if (generation !== generationRef.current) return;
           for (const c of pendingCandidatesRef.current) {

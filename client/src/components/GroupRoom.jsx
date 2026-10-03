@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { GroupState } from '../hooks/useGroupChat.js';
 import Nav from './Nav.jsx';
 import GroupVideoGrid from './GroupVideoGrid.jsx';
@@ -5,6 +6,7 @@ import GroupChat from './GroupChat.jsx';
 import GroupGamePanel from './GroupGamePanel.jsx';
 
 export default function GroupRoom({ chat, region }) {
+  const [gameOpen, setGameOpen] = useState(false);
   const {
     state, roomId, peers, error, online, videoEnabled,
     localVideoRef, game,
@@ -14,13 +16,14 @@ export default function GroupRoom({ chat, region }) {
 
   const isLive = state === GroupState.CONNECTED || state === GroupState.CONNECTING;
   const gameActive = game?.active === true;
+  const showGamePanel = isLive && (gameOpen || gameActive);
 
   return (
     <div className="room-page">
       <Nav online={online} onLogoClick={leave} showStats />
 
       <div className="room-inner">
-        <div className={`room-main ${gameActive ? 'has-game' : ''}`}>
+        <div className={`room-main ${showGamePanel ? 'has-game' : ''}`}>
           <div className="room-videos group-videos-container">
             <GroupVideoGrid
               localVideoRef={localVideoRef}
@@ -48,17 +51,26 @@ export default function GroupRoom({ chat, region }) {
 
           {isLive && <GroupChat chat={chat} visible />}
 
-          {isLive && <GroupGamePanel chat={chat} />}
+          {showGamePanel && (
+            <GroupGamePanel chat={chat} onClose={() => setGameOpen(false)} />
+          )}
         </div>
 
         <div className="room-controls">
           <button
             className="room-ctrl room-ctrl-game"
-            onClick={() => gameActive ? leaveGroupGame() : startGroupGame()}
+            onClick={() => {
+              if (showGamePanel) {
+                if (gameActive) leaveGroupGame();
+                setGameOpen(false);
+              } else {
+                setGameOpen(true);
+              }
+            }}
             disabled={!isLive}
           >
-            <span className="room-ctrl-icon">{gameActive ? '✕' : '🎮'}</span>
-            <span className="room-ctrl-label">{gameActive ? 'End game' : 'Play game'}</span>
+            <span className="room-ctrl-icon">🎮</span>
+            <span className="room-ctrl-label">{showGamePanel ? 'Hide games' : 'Play game'}</span>
           </button>
 
           <button
