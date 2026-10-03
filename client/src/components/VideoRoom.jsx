@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { VideoState } from '../hooks/useVideoChat.js';
+import { useGame } from '../hooks/useGame.js';
+import { useTwoTruths } from '../hooks/useTwoTruths.js';
+import { socket } from '../lib/socket.js';
 import Icebreaker from './Icebreaker.jsx';
 import Nav from './Nav.jsx';
 import ChatSidebar from './ChatSidebar.jsx';
@@ -15,6 +18,22 @@ export default function VideoRoom({ chat, region, interests = [] }) {
   } = chat;
   const [reportOpen, setReportOpen] = useState(false);
   const [gameOpen, setGameOpen] = useState(false);
+
+  // Games live here so both peers can see when one starts
+  const wyr = useGame(peerId, socket.id);
+  const tt = useTwoTruths(peerId);
+
+  const anyGameActive = wyr.active || tt.active;
+
+  // Auto-open the panel when the peer starts a game
+  useEffect(() => {
+    if (anyGameActive) setGameOpen(true);
+  }, [anyGameActive]);
+
+  // Reset panel when peer changes
+  useEffect(() => {
+    setGameOpen(false);
+  }, [peerId]);
 
   useEffect(() => {
     if (localVideoRef.current && localStreamRef.current) {
@@ -37,13 +56,14 @@ export default function VideoRoom({ chat, region, interests = [] }) {
     state === VideoState.FAILED;
 
   const isLive = state === VideoState.CONNECTED;
+  const showGamePanel = isLive && (gameOpen || anyGameActive);
 
   return (
     <div className="room-page">
       <Nav online={online} onLogoClick={leave} showStats />
 
       <div className="room-inner">
-        <div className={`room-main ${gameOpen ? 'has-game' : ''}`}>
+        <div className={`room-main ${showGamePanel ? 'has-game' : ''}`}>
           <div className="room-videos">
             <video ref={remoteVideoRef} autoPlay playsInline className="room-remote" />
 
@@ -78,7 +98,7 @@ export default function VideoRoom({ chat, region, interests = [] }) {
               </div>
             )}
 
-            {isLive && !gameOpen && <Icebreaker visible />}
+            {isLive && !showGamePanel && <Icebreaker visible />}
 
             {showOverlay && (
               <div className="room-overlay">
@@ -115,10 +135,10 @@ export default function VideoRoom({ chat, region, interests = [] }) {
 
           <ChatSidebar peerId={peerId} visible={isLive} />
 
-          {gameOpen && isLive && (
+          {showGamePanel && (
             <GamePanel
-              peerId={peerId}
-              visible={isLive}
+              wyr={wyr}
+              tt={tt}
               onClose={() => setGameOpen(false)}
             />
           )}
@@ -127,11 +147,19 @@ export default function VideoRoom({ chat, region, interests = [] }) {
         <div className="room-controls">
           <button
             className="room-ctrl room-ctrl-game"
-            onClick={() => setGameOpen((v) => !v)}
+            onClick={() => {
+              if (showGamePanel) {
+                if (wyr.active) wyr.leave();
+                if (tt.active) tt.leave();
+                setGameOpen(false);
+              } else {
+                setGameOpen(true);
+              }
+            }}
             disabled={!isLive}
           >
             <span className="room-ctrl-icon">🎮</span>
-            <span className="room-ctrl-label">{gameOpen ? 'Hide games' : 'Play game'}</span>
+            <span className="room-ctrl-label">{showGamePanel ? 'Hide games' : 'Play game'}</span>
           </button>
 
           <button

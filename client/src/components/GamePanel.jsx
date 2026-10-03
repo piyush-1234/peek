@@ -1,17 +1,9 @@
-import { useGame } from '../hooks/useGame.js';
-import { useTwoTruths } from '../hooks/useTwoTruths.js';
-import { socket } from '../lib/socket.js';
 import TwoTruthsPanel from './TwoTruthsPanel.jsx';
 
-export default function GamePanel({ peerId, visible, onClose }) {
-  const wyr = useGame(peerId, socket.id);
-  const tt = useTwoTruths(peerId);
-
-  if (!visible) return null;
-
+export default function GamePanel({ wyr, tt, onClose }) {
   const anyActive = wyr.active || tt.active;
 
-  // GAME SELECTOR
+  // ---------- GAME SELECTOR ----------
   if (!anyActive) {
     return (
       <aside className="game-panel">
@@ -50,22 +42,21 @@ export default function GamePanel({ peerId, visible, onClose }) {
     );
   }
 
-  // ACTIVE GAME
-  if (wyr.active) {
-    return <WYRPanel game={wyr} onClose={onClose} />;
-  }
+  // ---------- 2 TRUTHS 1 LIE ----------
   if (tt.active) {
-    return <TwoTruthsPanel game={tt} onClose={onClose} />;
+    return <TwoTruthsPanel game={tt} onClose={tt.leave} />;
+  }
+
+  // ---------- WOULD YOU RATHER ----------
+  if (wyr.active) {
+    return <WYRPanel game={wyr} onClose={wyr.leave} />;
   }
 
   return null;
 }
 
-// ---------- Existing WYR panel — extracted ----------
 function WYRPanel({ game, onClose }) {
-  const {
-    type, round, prompt, myVote, peerVote, reveal, vote, next, leave,
-  } = game;
+  const { round, prompt, myVote, peerVote, reveal, vote, next, leave } = game;
 
   if (!prompt) return null;
 
