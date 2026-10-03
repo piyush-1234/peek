@@ -1,5 +1,71 @@
-export default function GamePanel({ game, onClose }) {
-  const { prompt, round, myVote, peerVote, reveal, vote, next } = game;
+import { useGame } from '../hooks/useGame.js';
+import { useTwoTruths } from '../hooks/useTwoTruths.js';
+import { socket } from '../lib/socket.js';
+import TwoTruthsPanel from './TwoTruthsPanel.jsx';
+
+export default function GamePanel({ peerId, visible, onClose }) {
+  const wyr = useGame(peerId, socket.id);
+  const tt = useTwoTruths(peerId);
+
+  if (!visible) return null;
+
+  const anyActive = wyr.active || tt.active;
+
+  // GAME SELECTOR
+  if (!anyActive) {
+    return (
+      <aside className="game-panel">
+        <div className="game-header">
+          <div className="game-title">
+            <span className="game-icon">🎮</span>
+            <span>Play a game</span>
+          </div>
+          <button className="game-close" onClick={onClose} title="Close">✕</button>
+        </div>
+        <div className="game-body game-selector-body">
+          <div className="game-start-title">Pick a game</div>
+          <div className="game-start-sub">
+            Both of you will see the same game. First to click picks it.
+          </div>
+
+          <button className="game-choice" onClick={() => wyr.startGame('wyr')}>
+            <span className="game-choice-icon">🤔</span>
+            <span className="game-choice-body">
+              <span className="game-choice-title">Would You Rather</span>
+              <span className="game-choice-desc">Quick votes. See if you agree.</span>
+            </span>
+            <span className="game-choice-arrow">→</span>
+          </button>
+
+          <button className="game-choice" onClick={() => tt.start()}>
+            <span className="game-choice-icon">🎭</span>
+            <span className="game-choice-body">
+              <span className="game-choice-title">2 Truths 1 Lie</span>
+              <span className="game-choice-desc">Write 3 things. Peer guesses the lie.</span>
+            </span>
+            <span className="game-choice-arrow">→</span>
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
+  // ACTIVE GAME
+  if (wyr.active) {
+    return <WYRPanel game={wyr} onClose={onClose} />;
+  }
+  if (tt.active) {
+    return <TwoTruthsPanel game={tt} onClose={onClose} />;
+  }
+
+  return null;
+}
+
+// ---------- Existing WYR panel — extracted ----------
+function WYRPanel({ game, onClose }) {
+  const {
+    type, round, prompt, myVote, peerVote, reveal, vote, next, leave,
+  } = game;
 
   if (!prompt) return null;
 
@@ -9,15 +75,14 @@ export default function GamePanel({ game, onClose }) {
     <aside className="game-panel">
       <div className="game-header">
         <div className="game-title">
-          <span className="game-icon">🎮</span>
+          <span className="game-icon">🤔</span>
           <span>Would You Rather</span>
         </div>
-        <button className="game-close" onClick={onClose} title="Close game">✕</button>
+        <button className="game-close" onClick={leave} title="End game">✕</button>
       </div>
 
       <div className="game-body">
         <div className="game-round">Round {round + 1}</div>
-
         <div className="game-prompt">Would you rather…</div>
 
         <div className="game-options">
@@ -49,21 +114,12 @@ export default function GamePanel({ game, onClose }) {
             {agreed ? '✨ You both picked the same!' : '🤔 You picked different ones'}
           </div>
         )}
-
-        {!myVote && (
-          <div className="game-hint">Pick one to see what they chose</div>
-        )}
-        {myVote && !peerVote && (
-          <div className="game-hint">Waiting for them to pick…</div>
-        )}
+        {!myVote && <div className="game-hint">Pick one to see what they chose</div>}
+        {myVote && !peerVote && <div className="game-hint">Waiting for them to pick…</div>}
       </div>
 
       <div className="game-footer">
-        <button
-          className="game-btn game-btn-next"
-          onClick={next}
-          disabled={!reveal}
-        >
+        <button className="game-btn game-btn-next" onClick={next} disabled={!reveal}>
           Next question →
         </button>
       </div>

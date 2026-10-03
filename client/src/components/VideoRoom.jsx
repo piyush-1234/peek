@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 import { VideoState } from '../hooks/useVideoChat.js';
-import { useGame } from '../hooks/useGame.js';
-import { socket } from '../lib/socket.js';
 import Icebreaker from './Icebreaker.jsx';
 import Nav from './Nav.jsx';
 import ChatSidebar from './ChatSidebar.jsx';
@@ -16,7 +14,7 @@ export default function VideoRoom({ chat, region, interests = [] }) {
     next, retry, leave, report, toggleVideo,
   } = chat;
   const [reportOpen, setReportOpen] = useState(false);
-  const game = useGame(peerId, socket.id);
+  const [gameOpen, setGameOpen] = useState(false);
 
   useEffect(() => {
     if (localVideoRef.current && localStreamRef.current) {
@@ -45,7 +43,7 @@ export default function VideoRoom({ chat, region, interests = [] }) {
       <Nav online={online} onLogoClick={leave} showStats />
 
       <div className="room-inner">
-        <div className={`room-main ${game.active ? 'has-game' : ''}`}>
+        <div className={`room-main ${gameOpen ? 'has-game' : ''}`}>
           <div className="room-videos">
             <video ref={remoteVideoRef} autoPlay playsInline className="room-remote" />
 
@@ -117,17 +115,17 @@ export default function VideoRoom({ chat, region, interests = [] }) {
 
           <ChatSidebar peerId={peerId} visible={isLive} />
 
-          {game.active && <GamePanel game={game} onClose={game.leave} />}
+          {gameOpen && <GamePanel peerId={peerId} visible={isLive} onClose={() => setGameOpen(false)} />}
         </div>
 
         <div className="room-controls">
           <button
             className="room-ctrl room-ctrl-game"
-            onClick={() => game.active ? game.leave() : game.startGame('wyr')}
+            onClick={() => setGameOpen((v) => !v)}
             disabled={!isLive}
           >
-            <span className="room-ctrl-icon">{game.active ? '✕' : '🎮'}</span>
-            <span className="room-ctrl-label">{game.active ? 'End game' : 'Play game'}</span>
+            <span className="room-ctrl-icon">🎮</span>
+            <span className="room-ctrl-label">{gameOpen ? 'Hide games' : 'Play game'}</span>
           </button>
 
           <button
