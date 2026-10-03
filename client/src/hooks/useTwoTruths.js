@@ -41,7 +41,6 @@ export function useTwoTruths(peerId) {
     const onGameEvent = ({ event, payload }) => {
       if (event === 'start_2t1l') {
         setActive(true);
-        setType(null); // not used
         setPhase('writing');
         setRound(0);
         setMyStatements([]); setPeerStatements([]);
