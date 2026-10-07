@@ -181,6 +181,7 @@ export function useVideoChat() {
         clearIceTimeout();
         setState(VideoState.CONNECTED);
         setError(null);
+        if (window.gtag) window.gtag('event', 'chat_matched', { mode: 'video' });
       } else if (s === 'failed') {
         if (iceRestartCountRef.current < ICE_RESTART_ATTEMPTS && initiatorRef.current) {
           iceRestartCountRef.current += 1;
@@ -366,6 +367,7 @@ export function useVideoChat() {
 
   // ---- toggleVideo ----
   const toggleVideo = useCallback(async () => {
+    if (window.gtag) window.gtag('event', 'video_toggle', { enabled: !videoEnabled });
     const sender = videoSenderRef.current;
     const stream = localStreamRef.current;
     if (!stream) return;
@@ -406,6 +408,7 @@ export function useVideoChat() {
   }, [videoEnabled]);
 
   const next = useCallback((region, interests = []) => {
+    if (window.gtag) window.gtag('event', 'chat_next', {});
     if (!localStreamRef.current) return begin(entryModeRef.current);
     teardownPeer();
     setState(VideoState.WAITING);
@@ -433,6 +436,7 @@ export function useVideoChat() {
   const retry = next;
 
   const leave = useCallback(() => {
+    if (window.gtag) window.gtag('event', 'chat_ended', { reason: 'user_leave' });
     socket.emit('leave');
     teardownPeer();
     if (localStreamRef.current) {

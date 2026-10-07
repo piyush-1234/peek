@@ -60,6 +60,16 @@ export default function Landing({ onStart, online }) {
 
   const handleStart = (mode) => {
     if (!ageConfirmed) return;
+
+    // GA4: track chat_started event
+    if (window.gtag) {
+      window.gtag('event', 'chat_started', {
+        mode: mode,                    // video | audio | text | group
+        region: region,                // anywhere | en:in | etc.
+        interests_count: selectedInterests.length,
+      });
+    }
+
     onStart(region, mode, selectedInterests);
   };
 
