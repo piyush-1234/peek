@@ -35,11 +35,14 @@ export default function VideoRoom({ chat, region, interests = [] }) {
     setGameOpen(false);
   }, [peerId]);
 
+    // GA4: track when a match is successfully connected
   useEffect(() => {
-    if (localVideoRef.current && localStreamRef.current) {
-      localVideoRef.current.srcObject = localStreamRef.current;
+    if (state === VideoState.CONNECTED && window.gtag) {
+      window.gtag('event', 'chat_matched', {
+        mode: 'video',
+      });
     }
-  }, [state, localStreamRef, localVideoRef]);
+  }, [state]);
 
   const overlayText = (() => {
     switch (state) {
